@@ -17,12 +17,12 @@ SET /A RELEASE_BUILD=0
 @SET SCRIPT_DIR=%cd%
 @SET APP_NAME="vermont_dreams"
 @SET APP_ARCH=x64
-rem @SET SHADER_DIR=%SCRIPT_DIR%\shaders
-rem @SET SHADER_SRC_DIR=%SHADER_DIR%\source
-rem @SET SHADER_BIN_DIR=%SHADER_DIR%\bin
-rem @SET "VULKAN_SDK_PATH=C:\VulkanSDK\1.1.126.0\"
-rem @SET VULKAN_SDK_VERSION=1.2.141.2
-rem @SET "VULKAN_SDK_PATH=C:\VulkanSDK\%VULKAN_SDK_VERSION%\"
+:: @SET SHADER_DIR=%SCRIPT_DIR%\shaders
+:: @SET SHADER_SRC_DIR=%SHADER_DIR%\source
+:: @SET SHADER_BIN_DIR=%SHADER_DIR%\bin
+:: @SET "VULKAN_SDK_PATH=C:\VulkanSDK\1.1.126.0\"
+:: @SET VULKAN_SDK_VERSION=1.2.141.2
+:: @SET "VULKAN_SDK_PATH=C:\VulkanSDK\%VULKAN_SDK_VERSION%\"
 
 
 ::------------------------------
@@ -43,13 +43,13 @@ echo.
 :: Compile Shaders
 ::
 ::------------------------------
-rem mkdir %SHADER_BIN_DIR% 2>nul
-rem echo Compiling shaders...
-rem %VULKAN_SDK_PATH%\Bin\glslc.exe %SHADER_SRC_DIR%\vkTriangle.vert -o %SHADER_BIN_DIR%\vkTriangle_vert.spv -Werror
-rem %VULKAN_SDK_PATH%\Bin\glslc.exe %SHADER_SRC_DIR%\vkTriangle.frag -o %SHADER_BIN_DIR%\vkTriangle_frag.spv -Werror
-rem IF %ERRORLEVEL% NEQ 0 GOTO :SHADER_COMP_ERR
-rem echo Done.
-rem echo.
+:: mkdir %SHADER_BIN_DIR% 2>nul
+:: echo Compiling shaders...
+:: %VULKAN_SDK_PATH%\Bin\glslc.exe %SHADER_SRC_DIR%\vkTriangle.vert -o %SHADER_BIN_DIR%\vkTriangle_vert.spv -Werror
+:: %VULKAN_SDK_PATH%\Bin\glslc.exe %SHADER_SRC_DIR%\vkTriangle.frag -o %SHADER_BIN_DIR%\vkTriangle_frag.spv -Werror
+:: IF %ERRORLEVEL% NEQ 0 GOTO :SHADER_COMP_ERR
+:: echo Done.
+:: echo.
 
 
 ::------------------------------
@@ -59,8 +59,17 @@ rem echo.
 ::
 ::------------------------------
 where cl >nul 2>nul
-rem IF %ERRORLEVEL% NEQ 0 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul
-IF %ERRORLEVEL% NEQ 0 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul
+
+::
+:: Visual Studio 2022
+::-------------------
+IF %ERRORLEVEL% NEQ 0 call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul
+
+::
+:: Visual Studio 2019
+::
+:: IF %ERRORLEVEL% NEQ 0 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul
+
 IF %ERRORLEVEL% NEQ 0 GOTO :VS_NOT_FOUND
 
 :: Store msvc clutter elsewhere
@@ -99,18 +108,26 @@ SET DebugParameters=/Od /MTd /W4 /WX /D__UE_debug__#1
 SET ReleaseParameters=/MT /O2 /W4 /WX /Ob2
 
 :: Include Parameters
-SET IncludeParameters=/I%cd%\..
+SET IncludeParameters=/I%cd%\.. ^
+/I%SCRIPT_DIR%\include ^
+/I%SCRIPT_DIR%\include\GL ^
+/I%SCRIPT_DIR%\include\GLFW ^
+/I%SCRIPT_DIR%\include\glm ^
+/I%SCRIPT_DIR%\include\SOIL2
 
-rem ==============================================================
-rem
-rem Note: Removed the following from the include parameters above:
-rem
-rem ==============================================================
-rem /I%cd%\..\engine_tools ^
-rem /I%VULKAN_SDK_PATH%\Include
+::===============================================================
+::
+:: Note: Removed the following from the include parameters above:
+::
+::===============================================================
+:: /I%cd%\..\engine_tools ^
+:: /I%VULKAN_SDK_PATH%\Include
 
+::
 :: Link Parameters
+::----------------
 SET LinkParameters=/SUBSYSTEM:CONSOLE ^
+/LIBPATH:%SCRIPT_DIR%\lib ^
 /NXCOMPAT ^
 /MACHINE:x64 ^
 /NODEFAULTLIB:MSVCRTD ^
@@ -118,22 +135,25 @@ OpenGL32.lib ^
 user32.lib ^
 gdi32.lib ^
 shell32.lib ^
-odbccp32.lib
+odbccp32.lib ^
+glfw3.lib ^
 
-rem ===========================================================
-rem
-rem Note: Removed the following from the link parameters above:
-rem
-rem ===========================================================
-rem /LIBPATH:%VULKAN_SDK_PATH%\Lib\ ^
-rem vulkan-1.lib
 
+::============================================================
+::
+:: Note: Removed the following from the link parameters above:
+::
+::============================================================
+:: /LIBPATH:%VULKAN_SDK_PATH%\Lib\ ^
+:: vulkan-1.lib
+
+::
 :: Compiler Invocation
-::------------------------------
-@SET "INVOKE_RELEASE=cl %ReleaseParameters% %SCRIPT_DIR%\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %LinkParameters%"
-@SET "INVOKE_DEBUG=cl %DebugParameters% %SCRIPT_DIR%\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %LinkParameters%"
+::--------------------
+@SET "INVOKE_RELEASE=cl %ReleaseParameters% %SCRIPT_DIR%\\src\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %LinkParameters%"
+@SET "INVOKE_DEBUG=cl %DebugParameters% %SCRIPT_DIR%\\src\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %LinkParameters%"
 
-IF /I "%RELEASE_BUILD%" EQU "1" (echo UE Release build...) else (echo UE Debug build...)
+IF /I "%RELEASE_BUILD%" EQU "1" (echo Building [ release ]...) else (echo Building [ debug ]...)
 IF /I "%RELEASE_BUILD%" EQU "1" (%INVOKE_RELEASE%) else (%INVOKE_DEBUG%)
 IF %ERRORLEVEL% NEQ 0 GOTO :exit
 xcopy /y %APP_NAME%.exe ..\ >nul
@@ -160,11 +180,11 @@ echo.
 GOTO :exit
 
 
-rem :SHADER_COMP_ERR
-rem echo.
-rem echo Unable to compile shaders. Did you install the Vulkan SDK to the default location?
-rem echo This build script requires SDK version:  %VULKAN_SDK_VERSION%
-rem echo.
-rem GOTO :exit
+:: :SHADER_COMP_ERR
+:: echo.
+:: echo Unable to compile shaders. Did you install the Vulkan SDK to the default location?
+:: echo This build script requires SDK version:  %VULKAN_SDK_VERSION%
+:: echo.
+:: GOTO :exit
 
 :exit
