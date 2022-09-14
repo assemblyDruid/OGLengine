@@ -15,7 +15,7 @@ SET /A RELEASE_BUILD=0
 ::
 ::------------------------------
 @SET SCRIPT_DIR=%cd%
-@SET APP_NAME="vermont_dreams"
+@SET APP_NAME=chapter_2
 @SET APP_ARCH=x64
 :: @SET SHADER_DIR=%SCRIPT_DIR%\shaders
 :: @SET SHADER_SRC_DIR=%SHADER_DIR%\source
@@ -31,10 +31,10 @@ SET /A RELEASE_BUILD=0
 ::
 ::------------------------------
 echo Formatting files...
-clang-format.exe -i *.c >nul 2>nul
-clang-format.exe -i *.cpp >nul 2>nul
-clang-format.exe -i *.h >nul 2>nul
-clang-format.exe -i *.hpp >nul 2>nul
+clang-format.exe -i .\src\*.c       >nul 2>nul
+clang-format.exe -i .\src\*.cpp     >nul 2>nul
+clang-format.exe -i .\include\*.h   >nul 2>nul
+clang-format.exe -i .\include\*.hpp >nul 2>nul
 echo.
 
 
@@ -55,24 +55,16 @@ echo.
 ::------------------------------
 ::
 :: Compilation
-:: Requires Visual Studio 2019
+:: Requires Visual Studio 2022
 ::
 ::------------------------------
 where cl >nul 2>nul
-
-::
-:: Visual Studio 2022
-::-------------------
-IF %ERRORLEVEL% NEQ 0 call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul
-
-::
-:: Visual Studio 2019
-::
-:: IF %ERRORLEVEL% NEQ 0 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul
-
+IF %ERRORLEVEL% NEQ 0 call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat" %APP_ARCH% >nul 2>nul
 IF %ERRORLEVEL% NEQ 0 GOTO :VS_NOT_FOUND
 
+::
 :: Store msvc clutter elsewhere
+::-----------------------------
 mkdir msvc_landfill >nul 2>nul
 pushd msvc_landfill >nul
 
@@ -88,7 +80,7 @@ pushd msvc_landfill >nul
 :: /Ob2                 Enable full inline expansion. [ cfarvin::NOTE ] Debugging impact.
 :: /Z7	                Full symbolic debug info. No pdb. (See /Zi, /Zl).
 :: /GS	                Detect buffer overruns.
-:: /MD	                Multi-thread specific, DLL-specific runtime lib. (See /MDd, /MT, /MTd, /LD, /LDd).
+:: /MD*                 Multi-thread specific, DLL-specific runtime lib. (See /MDd, /MT, /MTd, /LD, /LDd).
 :: /GL	                Whole program optimization.
 :: /EHsc                No exception handling (Unwind semantics requrie vstudio env). (See /W1).
 :: /I<arg>              Specify include directory.
@@ -102,18 +94,19 @@ pushd msvc_landfill >nul
 SET GeneralParameters=/Oi /Qpar /EHsc /GL /nologo /Ot
 
 :: Debug Paramters
-SET DebugParameters=/Od /MTd /W4 /WX /D__UE_debug__#1
+SET DebugParameters=/Od /W4 /WX
 
 :: Release Parameters
-SET ReleaseParameters=/MT /O2 /W4 /WX /Ob2
+SET ReleaseParameters=/O2 /W4 /WX /Ob2
 
 :: Include Parameters
 SET IncludeParameters=/I%cd%\.. ^
-/I%SCRIPT_DIR%\include ^
-/I%SCRIPT_DIR%\include\GL ^
-/I%SCRIPT_DIR%\include\GLFW ^
-/I%SCRIPT_DIR%\include\glm ^
-/I%SCRIPT_DIR%\include\SOIL2
+/I%SCRIPT_DIR%\.. ^
+/I%SCRIPT_DIR%\..\include ^
+/I%SCRIPT_DIR%\..\include\GL ^
+/I%SCRIPT_DIR%\..\include\GLFW ^
+/I%SCRIPT_DIR%\..\include\glm ^
+/I%SCRIPT_DIR%\..\include\SOIL2
 
 ::===============================================================
 ::
@@ -124,39 +117,41 @@ SET IncludeParameters=/I%cd%\.. ^
 :: /I%VULKAN_SDK_PATH%\Include
 
 ::
-:: Link Parameters
+:: General Link Parameters
 ::----------------
-SET LinkParameters=/SUBSYSTEM:CONSOLE ^
-/LIBPATH:%SCRIPT_DIR%\lib ^
+SET GeneralLinkParameters=/SUBSYSTEM:CONSOLE ^
+/LIBPATH:%SCRIPT_DIR%\..\lib ^
 /NXCOMPAT ^
 /MACHINE:x64 ^
-/NODEFAULTLIB:MSVCRTD ^
 OpenGL32.lib ^
 user32.lib ^
 gdi32.lib ^
 shell32.lib ^
 odbccp32.lib ^
-glfw3.lib ^
+glew32s.lib ^
+glfw3dll.lib
 
+::
+:: Debug Link Parameters
+::----------------------
+SET DebugLinkParameters=glfw3.lib
 
-::============================================================
 ::
-:: Note: Removed the following from the link parameters above:
-::
-::============================================================
-:: /LIBPATH:%VULKAN_SDK_PATH%\Lib\ ^
-:: vulkan-1.lib
+:: Release Link Parameters
+::------------------------
+SET ReleaseLinkParameters=glfw3_mt.lib
 
 ::
 :: Compiler Invocation
 ::--------------------
-@SET "INVOKE_RELEASE=cl %ReleaseParameters% %SCRIPT_DIR%\\src\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %LinkParameters%"
-@SET "INVOKE_DEBUG=cl %DebugParameters% %SCRIPT_DIR%\\src\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %LinkParameters%"
+@SET "INVOKE_RELEASE=cl %ReleaseParameters% %SCRIPT_DIR%\\src\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %GeneralLinkParameters% %ReleaseLinkParameters%"
+@SET "INVOKE_DEBUG=cl %DebugParameters% %SCRIPT_DIR%\\src\\%APP_NAME%.cpp %GeneralParameters% %IncludeParameters% /link %GeneralLinkParameters% %DebugLinkParameters%"
 
-IF /I "%RELEASE_BUILD%" EQU "1" (echo Building [ release ]...) else (echo Building [ debug ]...)
+IF /I "%RELEASE_BUILD%" EQU "1" ( echo Building [ release ]... ) else ( echo Building [ debug ]... )
 IF /I "%RELEASE_BUILD%" EQU "1" (%INVOKE_RELEASE%) else (%INVOKE_DEBUG%)
 IF %ERRORLEVEL% NEQ 0 GOTO :exit
-xcopy /y %APP_NAME%.exe ..\ >nul
+
+xcopy /y %APP_NAME%.exe ..\..\ >nul
 popd >nul
 echo Done.
 echo.
@@ -167,7 +162,7 @@ echo.
 ::
 ::------------------------------
 echo Performing tag analysis...
-python TagAnalysis.py --emacs
+python .\\..\\TagAnalysis.py --emacs
 echo Done.
 echo.
 GOTO :exit
