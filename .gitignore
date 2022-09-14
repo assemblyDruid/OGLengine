@@ -1,0 +1,8 @@
+./include
+./lib
+*.dll
+*.lib
+*.exe
+*.pdb
+*.obj
+*/msvc_landfill
