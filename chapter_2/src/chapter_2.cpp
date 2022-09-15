@@ -45,7 +45,7 @@ Log(const LogType lt, const char* const c_str)
             break;
     }
 
-    std::fprintf(output_dest, "%s: %s", output_tag.c_str(), c_str);
+    std::fprintf(output_dest, "%s: %s\n", output_tag.c_str(), c_str);
     std::fflush(output_dest);
 }
 
@@ -86,6 +86,7 @@ ReadShaderSource(const char* const file_path)
         error_ss << "Shader source file does not exist. Given:\n\t" << file_path;
         Log(LogType::ERROR, error_ss);
         file_stream.close();
+        return "";
     }
 
     std::stringstream ss("");
@@ -98,6 +99,7 @@ ReadShaderSource(const char* const file_path)
         error_ss << "Shader source file was empty. Given:\n\t" << file_path;
         Log(LogType::ERROR, error_ss);
         file_stream.close();
+        return "";
     }
 
     file_stream.close();
@@ -107,8 +109,8 @@ ReadShaderSource(const char* const file_path)
 GLuint
 CreateShaderProgram()
 {
-    GLuint              vertex_shader        = glCreateShader(GL_VERTEX_SHADER);
-    const std::string   vs_string            = ReadShaderSource("./src/shaders/vertex_shader.glsl");
+    GLuint              vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    const std::string   vs_string = ReadShaderSource("./chapter_2/src/shaders/vertex_shader.glsl");
     const GLchar* const vertex_shader_source = vs_string.c_str();
     glShaderSource(vertex_shader, 1, &(vertex_shader_source), nullptr);
 
@@ -124,7 +126,7 @@ CreateShaderProgram()
     }
 
     GLuint            fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    const std::string fs_string       = ReadShaderSource("./src/shaders/fragment_shader.glsl");
+    const std::string fs_string = ReadShaderSource("./chapter_2/src/shaders/fragment_shader.glsl");
     const GLchar*     fragment_shader_source = fs_string.c_str();
     glShaderSource(fragment_shader, 1, &(fragment_shader_source), nullptr);
 

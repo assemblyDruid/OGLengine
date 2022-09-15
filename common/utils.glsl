@@ -1,8 +1,3 @@
-#version 450
-
-uniform float t;
-out     float offset;
-
 //
 // Retuns a transformation matrix.
 //
@@ -74,27 +69,4 @@ mat4 GetScaleMatrix(float x, float y, float z)
                       0.0, 0.0, 0.0, 1.0);
 
     return scale;
-}
-
-
-void main()
-{
-    mat4 M = GetRotateZMatrix(1.57 + t) * GetRotateXMatrix(3.14 + t) *
-             GetRotateYMatrix(3.14 + t) * GetTranslateMatrix(t, t, t) *
-             GetScaleMatrix(1 + t, 1 + t, 1 + t);
-
-    if (0 == gl_VertexID)
-    {
-        gl_Position = M * vec4(0.25 + t, -0.25, 0.0, 1.0);
-    }
-    else if (1 == gl_VertexID)
-    {
-        gl_Position = M * vec4(-0.25 + t, -0.25, 0.0, 1.0);
-    }
-    else
-    {
-        gl_Position = M * vec4(0.0 + t, 0.25, 0.0, 1.0);
-    }
-
-    offset = t;
 }
