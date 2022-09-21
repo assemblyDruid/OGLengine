@@ -6,3 +6,4 @@
 *.pdb
 *.obj
 */msvc_landfill
+.vs/
