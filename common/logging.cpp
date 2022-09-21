@@ -1,7 +1,7 @@
 #include "logging.h"
 
 void
-Log(const LogType lt, const char* const c_str)
+Log(const LogType&& lt, const char* const&& c_str)
 {
     FILE*       output_dest = stdout;
     std::string output_tag  = "";
@@ -25,13 +25,13 @@ Log(const LogType lt, const char* const c_str)
 }
 
 void
-Log(const LogType lt, const std::stringstream& ss)
+Log(const LogType&& lt, const std::stringstream& ss)
 {
-    Log(lt, ss.str().c_str());
+    Log(std::move(lt), std::move(ss.str().c_str()));
 }
 
 void
-Log(const LogType lt, const std::string& str)
+Log(const LogType&& lt, const std::string& str)
 {
-    Log(lt, str.c_str());
+    Log(std::move(lt), std::move(str.c_str()));
 }

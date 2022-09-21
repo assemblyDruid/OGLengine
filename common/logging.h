@@ -12,12 +12,12 @@ enum class LogType
 };
 
 void
-Log(const LogType lt, const char* const c_str);
+Log(const LogType&& lt, const char* const&& c_str);
 
 void
-Log(const LogType lt, const std::stringstream& ss);
+Log(const LogType&& lt, const std::stringstream& ss);
 
 void
-Log(const LogType lt, const std::string& str);
+Log(const LogType&& lt, const std::string& str);
 
 #endif

@@ -111,3 +111,34 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
 
     return program;
 }
+
+const inline bool
+SendVertexData(const GLuint&& vertex_shader_attrib_location,
+               const GLint&& vertex_shader_attrib_num_elements,
+               const GLenum&& data_type,
+               const GLboolean&& vertex_shadeer_attrib_should_normalize,
+               const GLsizei&& stride,
+               const GLvoid*&& data)
+{
+    if (nullptr == data)
+    {
+        Log(LogType::ERROR, "Invalid vertex attribute data pointer.");
+        return false;
+    }
+    else if (0 > vertex_shader_attrib_num_elements)
+    {
+        Log(LogType::ERROR, "Invalid vertex attribute element count.");
+        return false;
+    }
+
+    glVertexAttribPointer(vertex_shader_attrib_location,
+                          vertex_shader_attrib_num_elements,
+                          data_type,
+                          vertex_shadeer_attrib_should_normalize,
+                          stride,
+                          data);
+
+    glEnableVertexAttribArray(vertex_shader_attrib_location);
+
+    return true;
+}

@@ -1,4 +1,5 @@
 #define NUM_VAO 1
+#define NUM_VBO 2
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
@@ -15,6 +16,7 @@
 
 GLuint rendering_program;
 GLuint vao[NUM_VAO];
+GLuint vbo[NUM_VBO];
 
 void
 Init(GLFWwindow* window)
@@ -30,9 +32,12 @@ Init(GLFWwindow* window)
     // Note: OGL requires at least one VAO when shaders are being used.
     glGenVertexArrays(NUM_VAO, vao);
     glBindVertexArray(vao[0]);
+
+    glGenBuffers(2, vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 }
 
-void
+bool
 Display(GLFWwindow* window, double current_time)
 {
     // [ cfarvin::TODO ] We are not using the window or current_time arguments from the chapter yet.
@@ -44,6 +49,19 @@ Display(GLFWwindow* window, double current_time)
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
+
+    const bool success = SendVertexData(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    if (true != success)
+    {
+        Log(LogType::ERROR, "Failed to send vertex data.");
+        return false;
+    }
+    glEnableVertexAttribArray(0);
+
+    GLint mv_location = glGetUniformLocation(rendering_program, "mv_matrix");
+    GLint proj_location = glGetUniformLocation(rendering_program, "proj_matrix");
+    glUniformMatrix4fv(mv_location, 1, GL_FALSE, glm::value_ptr(mv_matrix));
+    glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
 
     glUseProgram(rendering_program);
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -78,9 +96,10 @@ main()
 
     Init(window);
 
-    while (!glfwWindowShouldClose(window))
+    bool success = true;
+    while (!glfwWindowShouldClose(window) && success)
     {
-        Display(window, glfwGetTime());
+        success = Display(window, glfwGetTime());
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
