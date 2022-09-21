@@ -8,7 +8,6 @@
 #include "logging.h"
 
 #include <chrono>
-#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
@@ -16,8 +15,6 @@
 
 GLuint rendering_program;
 GLuint vao[NUM_VAO];
-float  t  = 0.0f;
-float  dt = 0.01f;
 
 void
 Init(GLFWwindow* window)
@@ -27,8 +24,8 @@ Init(GLFWwindow* window)
     {
     }
 
-    rendering_program = CreateShaderProgram("./chapter_2/src/shaders/vertex_shader.glsl",
-                                            "./chapter_2/src/shaders/fragment_shader.glsl");
+    rendering_program = CreateShaderProgram("./chapter_4/src/shaders/vertex_shader.glsl",
+                                            "./chapter_4/src/shaders/fragment_shader.glsl");
 
     // Note: OGL requires at least one VAO when shaders are being used.
     glGenVertexArrays(NUM_VAO, vao);
@@ -43,20 +40,12 @@ Display(GLFWwindow* window, double current_time)
     {
     }
 
-    t += dt;
-    if (abs(t) >= 1)
-    {
-        dt *= -1;
-    }
-
     glPointSize(50.0f);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(rendering_program);
-    GLuint t_offset_location = glGetUniformLocation(rendering_program, "t");
-    glProgramUniform1f(rendering_program, t_offset_location, t);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -74,7 +63,7 @@ main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
     // Note: nullptr parameters allow for fullscreen mode and resource sharing.
-    GLFWwindow* window = glfwCreateWindow(600, 600, "Chapter 2", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(600, 600, "Chapter 4", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
     if (GLEW_OK != glewInit())

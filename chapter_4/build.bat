@@ -15,7 +15,7 @@ SET /A RELEASE_BUILD=0
 ::
 ::------------------------------
 @SET SCRIPT_DIR=%cd%
-@SET APP_NAME=chapter_2
+@SET APP_NAME=chapter_4
 @SET APP_ARCH=x64
 :: @SET SHADER_DIR=%SCRIPT_DIR%\shaders
 :: @SET SHADER_SRC_DIR=%SHADER_DIR%\source
@@ -91,7 +91,7 @@ pushd msvc_landfill >nul
 :: /LIBPATH:<arg>       Specify library directory/directories.
 
 :: General Parameters
-SET GeneralParameters=/Oi /Qpar /EHsc /GL /GS /nologo /Ot /DGLEW_STATIC
+SET GeneralParameters=/Oi /Qpar /EHsc /GL /nologo /Ot /DGLEW_STATIC
 
 :: Debug Paramters
 SET DebugParameters=/Od /W4 /WX /Z7 /MTd
@@ -149,7 +149,6 @@ SET SourceFiles=%SCRIPT_DIR%\src\%APP_NAME%.cpp ^
 IF /I "%RELEASE_BUILD%" EQU "1" ( echo Building [ release ]... ) else ( echo Building [ debug ]... )
 IF /I "%RELEASE_BUILD%" EQU "1" (%INVOKE_RELEASE%) else (%INVOKE_DEBUG%)
 IF %ERRORLEVEL% NEQ 0 GOTO :exit
-
 
 xcopy /y %APP_NAME%.exe ..\..\ >nul
 popd >nul
