@@ -1,8 +1,8 @@
 #ifndef logging_h
 #define logging_h
 
-#include <string>
 #include <sstream>
+#include <string>
 
 enum class LogType
 {

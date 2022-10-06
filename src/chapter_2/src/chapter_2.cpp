@@ -1,5 +1,4 @@
 #define NUM_VAO 1
-#define NUM_VBO 2
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
@@ -9,6 +8,7 @@
 #include "logging.h"
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdio.h>
@@ -16,7 +16,8 @@
 
 GLuint rendering_program;
 GLuint vao[NUM_VAO];
-GLuint vbo[NUM_VBO];
+float  t  = 0.0f;
+float  dt = 0.01f;
 
 void
 Init(GLFWwindow* window)
@@ -26,18 +27,15 @@ Init(GLFWwindow* window)
     {
     }
 
-    rendering_program = CreateShaderProgram("./chapter_4/src/shaders/vertex_shader.glsl",
-                                            "./chapter_4/src/shaders/fragment_shader.glsl");
+    rendering_program = CreateShaderProgram("./../src/chapter_2/src/shaders/vertex_shader.glsl",
+                                            "./../src/chapter_2/src/shaders/fragment_shader.glsl");
 
     // Note: OGL requires at least one VAO when shaders are being used.
     glGenVertexArrays(NUM_VAO, vao);
     glBindVertexArray(vao[0]);
-
-    glGenBuffers(2, vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 }
 
-bool
+void
 Display(GLFWwindow* window, double current_time)
 {
     // [ cfarvin::TODO ] We are not using the window or current_time arguments from the chapter yet.
@@ -45,25 +43,20 @@ Display(GLFWwindow* window, double current_time)
     {
     }
 
+    t += dt;
+    if (abs(t) >= 1)
+    {
+        dt *= -1;
+    }
+
     glPointSize(50.0f);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    const bool success = SendVertexData(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    if (true != success)
-    {
-        Log(LogType::ERROR, "Failed to send vertex data.");
-        return false;
-    }
-    glEnableVertexAttribArray(0);
-
-    GLint mv_location = glGetUniformLocation(rendering_program, "mv_matrix");
-    GLint proj_location = glGetUniformLocation(rendering_program, "proj_matrix");
-    glUniformMatrix4fv(mv_location, 1, GL_FALSE, glm::value_ptr(mv_matrix));
-    glUniformMatrix4fv(proj_location, 1, GL_FALSE, glm::value_ptr(proj_matrix));
-
     glUseProgram(rendering_program);
+    GLuint t_offset_location = glGetUniformLocation(rendering_program, "t");
+    glProgramUniform1f(rendering_program, t_offset_location, t);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -81,7 +74,7 @@ main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
     // Note: nullptr parameters allow for fullscreen mode and resource sharing.
-    GLFWwindow* window = glfwCreateWindow(600, 600, "Chapter 4", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(600, 600, "Chapter 2", nullptr, nullptr);
     glfwMakeContextCurrent(window);
 
     if (GLEW_OK != glewInit())
@@ -96,10 +89,9 @@ main()
 
     Init(window);
 
-    bool success = true;
-    while (!glfwWindowShouldClose(window) && success)
+    while (!glfwWindowShouldClose(window))
     {
-        success = Display(window, glfwGetTime());
+        Display(window, glfwGetTime());
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

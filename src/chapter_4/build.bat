@@ -31,10 +31,13 @@ SET /A RELEASE_BUILD=0
 ::
 ::------------------------------
 echo Formatting files...
-clang-format.exe -i .\src\*.c       >nul 2>nul
-clang-format.exe -i .\src\*.cpp     >nul 2>nul
-clang-format.exe -i .\include\*.h   >nul 2>nul
-clang-format.exe -i .\include\*.hpp >nul 2>nul
+clang-format.exe -i .\src\*.c         >nul 2>nul
+clang-format.exe -i .\src\*.cpp       >nul 2>nul
+clang-format.exe -i .\src\*.h         >nul 2>nul
+clang-format.exe -i .\src\*.hpp       >nul 2>nul
+clang-format.exe -i .\..\common\*.h   >nul 2>nul
+clang-format.exe -i .\..\common\*.hpp >nul 2>nul
+clang-format.exe -i .\..\common\*.cpp >nul 2>nul
 echo.
 
 
@@ -102,18 +105,19 @@ SET ReleaseParameters=/O2 /W4 /WX /Ob2 /MT
 :: Include Parameters
 SET IncludeParameters=/I%cd%\.. ^
 /I%SCRIPT_DIR%\.. ^
-/I%SCRIPT_DIR%\..\include ^
-/I%SCRIPT_DIR%\..\include\GL ^
-/I%SCRIPT_DIR%\..\include\GLFW ^
-/I%SCRIPT_DIR%\..\include\glm ^
-/I%SCRIPT_DIR%\..\include\SOIL2 ^
-/I%SCRIPT_DIR%\..\common
+/I%SCRIPT_DIR%\..\.. ^
+/I%SCRIPT_DIR%\..\..\include ^
+/I%SCRIPT_DIR%\..\..\include\GL ^
+/I%SCRIPT_DIR%\..\..\include\GLFW ^
+/I%SCRIPT_DIR%\..\..\include\glm ^
+/I%SCRIPT_DIR%\..\..\include\SOIL2 ^
+/I%SCRIPT_DIR%\..\..\src\common
 
 ::
 :: General Link Parameters
 ::----------------
 SET GeneralLinkParameters=/SUBSYSTEM:CONSOLE ^
-/LIBPATH:%SCRIPT_DIR%\..\lib ^
+/LIBPATH:%SCRIPT_DIR%\..\..\lib ^
 /NXCOMPAT ^
 /MACHINE:x64 ^
 OpenGL32.lib ^
@@ -136,9 +140,10 @@ SET ReleaseLinkParameters=glfw3_mt.lib
 :: Source Files
 ::-------------
 SET SourceFiles=%SCRIPT_DIR%\src\%APP_NAME%.cpp ^
-%SCRIPT_DIR%\..\include\GL\glew.c ^
-%SCRIPT_DIR%\..\common\logging.cpp ^
-%SCRIPT_DIR%\..\common\gl_tools.cpp
+%SCRIPT_DIR%\..\..\include\GL\glew.c ^
+%SCRIPT_DIR%\..\..\src\common\logging.cpp ^
+%SCRIPT_DIR%\..\..\src\common\gl_tools.cpp ^
+%SCRIPT_DIR%\..\..\src\common\windowing.cpp
 
 ::
 :: Compiler Invocation
@@ -150,7 +155,7 @@ IF /I "%RELEASE_BUILD%" EQU "1" ( echo Building [ release ]... ) else ( echo Bui
 IF /I "%RELEASE_BUILD%" EQU "1" (%INVOKE_RELEASE%) else (%INVOKE_DEBUG%)
 IF %ERRORLEVEL% NEQ 0 GOTO :exit
 
-xcopy /y %APP_NAME%.exe ..\..\ >nul
+xcopy /y %APP_NAME%.exe ..\..\..\bin >nul
 popd >nul
 echo Done.
 echo.
@@ -161,7 +166,7 @@ echo.
 ::
 ::------------------------------
 echo Performing tag analysis...
-python .\\..\\TagAnalysis.py --emacs
+python %SCRIPT_DIR%\..\..\bin\TagAnalysis.py --emacs
 echo Done.
 echo.
 GOTO :exit

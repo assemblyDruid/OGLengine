@@ -1,7 +1,8 @@
-#include <fstream>
-
 #include "gl_tools.h"
+
 #include "logging.h"
+
+#include <fstream>
 
 const bool
 QueryGlErrors()
@@ -19,9 +20,8 @@ QueryGlErrors()
 }
 
 // Private to this file.
-static inline const bool
-ReadShaderSource(const char* const&& file_path,
-                 std::string& return_shader_source)
+static const bool
+ReadShaderSource(const char* const&& file_path, std::string& return_shader_source)
 {
     std::ifstream file_stream(file_path, std::ios::in);
     if (false == file_stream.good())
@@ -55,7 +55,7 @@ const GLuint
 CreateShaderProgram(const char* const&& vertex_shader_file_path,
                     const char* const&& fragment_shader_file_path)
 {
-    GLuint              vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    GLuint      vertex_shader = glCreateShader(GL_VERTEX_SHADER);
     std::string vertex_shader_source_buffer;
     ReadShaderSource(std::move(vertex_shader_file_path), vertex_shader_source_buffer);
     const GLchar* const vertex_shader_source = vertex_shader_source_buffer.c_str();
@@ -72,7 +72,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
         return 0;
     }
 
-    GLuint            fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    GLuint      fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
     std::string fragment_shader_source_buffer;
     ReadShaderSource(std::move(fragment_shader_file_path), fragment_shader_source_buffer);
     const GLchar* const fragment_shader_source = fragment_shader_source_buffer.c_str();
@@ -112,13 +112,13 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     return program;
 }
 
-const inline bool
-SendVertexData(const GLuint&& vertex_shader_attrib_location,
-               const GLint&& vertex_shader_attrib_num_elements,
-               const GLenum&& data_type,
-               const GLboolean&& vertex_shadeer_attrib_should_normalize,
-               const GLsizei&& stride,
-               const GLvoid*&& data)
+const bool
+SendVertexData(const GLuint&&    vertex_shader_attrib_location,
+               const GLint&&     vertex_shader_attrib_num_elements,
+               const GLenum&&    data_type,
+               const GLboolean&& vertex_shader_attrib_should_normalize,
+               const GLsizei&&   stride,
+               const GLvoid*&&   data)
 {
     if (nullptr == data)
     {
@@ -134,11 +134,47 @@ SendVertexData(const GLuint&& vertex_shader_attrib_location,
     glVertexAttribPointer(vertex_shader_attrib_location,
                           vertex_shader_attrib_num_elements,
                           data_type,
-                          vertex_shadeer_attrib_should_normalize,
+                          vertex_shader_attrib_should_normalize,
                           stride,
                           data);
 
     glEnableVertexAttribArray(vertex_shader_attrib_location);
 
     return true;
+}
+
+#define GetUniformLocationImpl                                                                    \
+    const GLint u_loc = glGetUniformLocation(shader_program, uniform_name);                       \
+    if (-1 != u_loc)                                                                              \
+    {                                                                                             \
+        std::string error_message = std::string("No such uniform: ") + std::string(uniform_name); \
+        Log(LogType::ERROR, error_message);                                                       \
+    }                                                                                             \
+    return u_loc
+
+const GLint
+GetUniformLocation(const GLuint& shader_program, const char* const&& uniform_name)
+{
+    GetUniformLocationImpl;
+}
+
+const GLint
+GetUniformLocation(const GLuint& shader_program, const char* const& uniform_name)
+{
+    GetUniformLocationImpl;
+}
+#undef GetUniformLocationImpl
+
+void
+SetUniformValue(const GLint& uniform_location, const GLfloat* value)
+{
+    glUniformMatrix4fv(uniform_location, 1, GL_FALSE, value);
+}
+
+void
+SetUniformValue(const GLuint&       shader_program,
+                const char* const&& uniform_name,
+                const GLfloat*      value)
+{
+    SetUniformValue(GetUniformLocation(shader_program, uniform_name), value);
 }
