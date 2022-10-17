@@ -51,6 +51,51 @@ ReadShaderSource(const char* const&& file_path, std::string& return_shader_sourc
     return true;
 }
 
+static void
+LogGLCompilationError(const GLuint& compilation_step, const std::string error_prefix = "")
+{
+    std::stringstream ss;
+    ss << error_prefix;
+
+    std::string error_message        = {};
+    GLsizei     error_message_length = 0;
+
+    if (GL_TRUE == glIsShader(compilation_step))
+    {
+        glGetShaderInfoLog(compilation_step, 0, &error_message_length, nullptr);
+    }
+    else if (GL_TRUE == glIsProgram(compilation_step))
+    {
+        glGetProgramInfoLog(compilation_step, 0, &error_message_length, nullptr);
+    }
+    else
+    {
+        ss << "Invalid compilation step, cannot print error message.";
+        Log(LogType::ERROR, ss);
+        return;
+    }
+
+    if (0 == error_message_length)
+    {
+        ss << "[ note ] The error buffer was empty.";
+        Log(LogType::ERROR, ss);
+        return;
+    }
+
+    error_message.reserve(error_message_length);
+    if (GL_TRUE == glIsShader(compilation_step))
+    {
+        glGetShaderInfoLog(compilation_step, 1024, nullptr, (GLchar*)(*error_message.data()));
+    }
+    else if (GL_TRUE == glIsProgram(compilation_step))
+    {
+        glGetProgramInfoLog(compilation_step, 1024, nullptr, (GLchar*)(*error_message.data()));
+    }
+
+    ss << error_message;
+    Log(LogType::ERROR, ss);
+}
+
 const GLuint
 CreateShaderProgram(const char* const&& vertex_shader_file_path,
                     const char* const&& fragment_shader_file_path)
@@ -66,9 +111,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vertex_compiled);
     if (GL_TRUE != vertex_compiled)
     {
-        GLchar error_message[1024];
-        glGetShaderInfoLog(vertex_shader, 1024, nullptr, error_message);
-        Log(LogType::ERROR, std::string(error_message));
+        LogGLCompilationError(vertex_shader, "[ vertex shader ] ");
         return 0;
     }
 
@@ -83,9 +126,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fragment_compiled);
     if (fragment_compiled != GL_TRUE)
     {
-        GLchar error_message[1024];
-        glGetShaderInfoLog(vertex_shader, 1024, nullptr, error_message);
-        Log(LogType::ERROR, std::string(error_message));
+        LogGLCompilationError(fragment_shader, "[ fragment shader ] ");
         return 0;
     }
 
@@ -98,9 +139,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &error_log_list_length);
     if (error_log_list_length > 0)
     {
-        GLchar error_message[1024];
-        glGetProgramInfoLog(program, 1024, nullptr, error_message);
-        Log(LogType::ERROR, std::string(error_message));
+        LogGLCompilationError(program, "[ program ] ");
         return 0;
     }
 
@@ -112,40 +151,9 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     return program;
 }
 
-const bool
-SendVertexData(const GLuint&&    vertex_shader_attrib_location,
-               const GLint&&     vertex_shader_attrib_num_elements,
-               const GLenum&&    data_type,
-               const GLboolean&& vertex_shader_attrib_should_normalize,
-               const GLsizei&&   stride,
-               const GLvoid*&&   data)
-{
-    if (nullptr == data)
-    {
-        Log(LogType::ERROR, "Invalid vertex attribute data pointer.");
-        return false;
-    }
-    else if (0 > vertex_shader_attrib_num_elements)
-    {
-        Log(LogType::ERROR, "Invalid vertex attribute element count.");
-        return false;
-    }
-
-    glVertexAttribPointer(vertex_shader_attrib_location,
-                          vertex_shader_attrib_num_elements,
-                          data_type,
-                          vertex_shader_attrib_should_normalize,
-                          stride,
-                          data);
-
-    glEnableVertexAttribArray(vertex_shader_attrib_location);
-
-    return true;
-}
-
 #define GetUniformLocationImpl                                                                    \
     const GLint u_loc = glGetUniformLocation(shader_program, uniform_name);                       \
-    if (-1 != u_loc)                                                                              \
+    if (-1 == u_loc)                                                                              \
     {                                                                                             \
         std::string error_message = std::string("No such uniform: ") + std::string(uniform_name); \
         Log(LogType::ERROR, error_message);                                                       \

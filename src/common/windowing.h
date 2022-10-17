@@ -3,20 +3,31 @@
 
 #include "GLFW/glfw3.h"
 
-struct Window
+class Window
 {
-    int         width;
-    int         height;
-    float       aspect_ratio;
-    GLFWwindow* window;
-};
+  public:
+    Window::Window(const int&&          _gl_major_version,
+                   const int&&          _gl_minor_version,
+                   const unsigned int&& _window_width,
+                   const unsigned int&& _window_height,
+                   const char* const&&  _window_title,
+                   bool&                success);
 
-const bool
-SetupWindow(GLFWwindow**         _window,
-            const int&&          _gl_major_version,
-            const int&&          _gl_minor_version,
-            const unsigned int&& _window_width,
-            const unsigned int&& _window_height,
-            const char* const&&  _window_title);
+    float
+    GetAspectRatio();
+
+    GLFWwindow* glfw_window;
+
+  private:
+    // These are already stored by GLFW, access them there.
+    /* int width; */
+    /* int height; */
+
+    // [ cfarvin::NOTE ] Need up update aspect ratio on window resize.
+    float aspect_ratio;
+
+    void
+    UpdateAspectRatio();
+};
 
 #endif // windowing_h

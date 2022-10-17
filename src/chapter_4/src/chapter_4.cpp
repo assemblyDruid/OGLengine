@@ -29,7 +29,7 @@ struct MVP
     void
     UpdateMVMat()
     {
-        mv_mat = m_mat * p_mat;
+        mv_mat = v_mat * m_mat;
     }
 
     GLuint mv_location;
@@ -42,7 +42,7 @@ struct MVP
 };
 MVP mvp = {};
 
-Window window = {};
+Window* window;
 
 struct Position3
 {
@@ -73,16 +73,28 @@ Cube cube;
 void
 SetUpCubeVerts()
 {
-    const float vertex_positions[108] = {
-        -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f,
-        +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f,
-        +1.0f, +1.0f, -1.0f, +1.0f, -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f,
-        +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f,
-        -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f,
-        -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f,
-        -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f,
-        -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f,
-        +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, -1.0f
+    // const float vertex_positions[108] = {
+    //     -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f,
+    //     +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f,
+    //     +1.0f, +1.0f, -1.0f, +1.0f, -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f,
+    //     +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f,
+    //     -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f,
+    //     -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f,
+    //     -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f,
+    //     -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f,
+    //     +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, -1.0f
+    // };
+
+    float vertex_positions[108] = {
+        -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+        1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,
+        1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f,
+        1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
+        -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f,
+        -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,
+        -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f,
+        1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f
     };
 
     glGenVertexArrays(NUM_VAO, vao);
@@ -101,15 +113,31 @@ Display()
     glClear(GL_DEPTH_BUFFER_BIT);
     glUseProgram(rendering_program);
 
-    SetUniformValue(mvp.mv_location, glm::value_ptr(mvp.m_mat));
+    // [ cfarvin::REVISIT ] This should be removed from Display() later on.
+    mvp.mv_location   = GetUniformLocation(rendering_program, "mv_matrix");
+    mvp.proj_location = GetUniformLocation(rendering_program, "proj_matrix");
+
+    // Perspective Matrix
+    mvp.p_mat = glm::perspective(1.0472f, // 1.0472 radians == 60 degrees
+                                 window->GetAspectRatio(),
+                                 0.1f,
+                                 1000.0f);
+
+    // Model Matrix
+    mvp.m_mat = glm::translate(glm::mat4(1.0f), glm::vec3(cube.x, cube.y, cube.z));
+
+    // View Matrix
+    mvp.v_mat = glm::translate(glm::mat4(1.0f), glm::vec3(-camera.x, -camera.y, -camera.z));
+
+    mvp.UpdateMVMat();
+
+    // Copy matricies to corresponding uniform values.
+    SetUniformValue(mvp.mv_location, glm::value_ptr(mvp.mv_mat));
     SetUniformValue(mvp.proj_location, glm::value_ptr(mvp.p_mat));
 
-    const bool success = SendVertexData(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    if (true != success)
-    {
-        Log(LogType::ERROR, "Failed to send vertex data.");
-        return false;
-    }
+    // Associate VBO with vertex shader attributes.
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(0);
 
     glEnable(GL_DEPTH_TEST);
@@ -122,15 +150,19 @@ Display()
 const bool
 Initialize()
 {
-    // Setup GLFW
-    if (false == SetupWindow(&(window.window), // Window
-                             4,                // GL Major Version
-                             5,                // GL Minor Version
-                             600,              // Window Width
-                             600,              // Window Height
-                             "Chapter 4"))     // Window Title
+    bool glew_glfw_window_success = true;
+
+    // Setup GLEW, GLFW, and the window.
+    window = new Window(4,                         // GL Major Version
+                        5,                         // GL Minor Version
+                        600,                       // Window Width
+                        600,                       // Window Height
+                        "Chapter 4",               // Window Title
+                        glew_glfw_window_success); // Error checking
+
+    if (false == glew_glfw_window_success)
     {
-        Log(LogType::ERROR, "Unable to set up GLFW.");
+        Log(LogType::ERROR, "Unable to set up GLEW/GLFW.");
         return false;
     }
 
@@ -143,32 +175,13 @@ Initialize()
         return false;
     }
 
-    // Set initial camera position.
+    // [ cfarvin::TODO ] These need to be moved.
+    // Set initial camera & cube position.
     camera.SetPosition(0.0f, 0.0f, 8.0f);
+    cube.SetPosition(0.0f, -2.0f, 0.0f);
 
     // Send cube vert data.
     SetUpCubeVerts();
-
-    // Build matrices.
-    // [ cfarvin::TODO ] This needs to be done on window re-size as well.
-    glfwGetFramebufferSize(window.window, &window.width, &window.height);
-    window.aspect_ratio = (float)window.width / (float)window.height;
-
-    // Perspective Matrix
-    mvp.p_mat = glm::perspective(1.0472f, // 1.0472 radians == 60 degrees
-                                 window.aspect_ratio,
-                                 0.1f,
-                                 1000.0f);
-    mvp.UpdateMVMat();
-
-    // View Matrix
-    mvp.v_mat = glm::translate(glm::mat4(1.0f), glm::vec3(-camera.x, -camera.y, -camera.z));
-
-    // Model Matrix
-    mvp.m_mat = glm::translate(glm::mat4(1.0f), glm::vec3(cube.x, cube.y, cube.z));
-
-    mvp.mv_location   = GetUniformLocation(rendering_program, "mv_matrix");
-    mvp.proj_location = GetUniformLocation(rendering_program, "proj_matrix");
 
     return true;
 }
@@ -183,15 +196,20 @@ main()
         std::exit(EXIT_FAILURE);
     }
 
-    while (!glfwWindowShouldClose(window.window) && success)
+    while ((false == glfwWindowShouldClose(window->glfw_window)) && success)
     {
         success = Display();
-        glfwSwapBuffers(window.window);
+        glfwSwapBuffers(window->glfw_window);
         glfwPollEvents();
     }
 
-    glfwDestroyWindow(window.window);
+    glfwDestroyWindow(window->glfw_window);
     glfwTerminate();
+
+    if (nullptr != window)
+    {
+        delete window;
+    }
 
     if (true == success)
     {

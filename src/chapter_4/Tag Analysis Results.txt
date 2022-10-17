@@ -3,5 +3,9 @@
 ==============================================================================
 
 There are 1 items tagged TODO:
-    [ TODO ] (chapter_4.cpp, 153): This needs to be done on window re-size as well.
+    [ TODO ] (chapter_4.cpp, 178): These need to be moved.
+
+
+There are 1 items tagged REVISIT:
+    [ REVISIT ] (chapter_4.cpp, 116): This should be removed from Display() later on.
 
