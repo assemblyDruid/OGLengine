@@ -20,11 +20,19 @@ extern const inline GLint
 GetUniformLocation(const GLuint& shader_program, const char* const& uniform_name);
 
 extern inline void
-SetUniformValue(const GLint& uniform_location, const GLfloat* value);
+SetUniformValueMat4(const GLint& uniform_location, const GLfloat* value);
 
 extern inline void
-SetUniformValue(const GLuint&       shader_program,
-                const char* const&& uniform_name,
-                const GLfloat*      value);
+SetUniformValueMat4(const GLuint&       shader_program,
+                    const char* const&& uniform_name,
+                    const GLfloat*      value);
+
+extern inline void
+SetUniformValue1F(const GLint& uniform_location, const GLfloat& value);
+
+extern inline void
+SetUniformValue1F(const GLuint&       shader_program,
+                  const char* const&& uniform_name,
+                  const GLfloat&      value);
 
 #endif

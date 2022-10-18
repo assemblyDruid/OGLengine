@@ -52,48 +52,32 @@ ReadShaderSource(const char* const&& file_path, std::string& return_shader_sourc
 }
 
 static void
-LogGLCompilationError(const GLuint& compilation_step, const std::string error_prefix = "")
+LogGLCompilationError(const GLuint& compilation_step)
 {
-    std::stringstream ss;
-    ss << error_prefix;
-
-    std::string error_message        = {};
-    GLsizei     error_message_length = 0;
+    constexpr unsigned int max_error_message_length                = 512;
+    GLchar                 error_message[max_error_message_length] = {};
 
     if (GL_TRUE == glIsShader(compilation_step))
     {
-        glGetShaderInfoLog(compilation_step, 0, &error_message_length, nullptr);
+        glGetShaderInfoLog(compilation_step,
+                           max_error_message_length,
+                           nullptr,
+                           &(error_message[0]));
     }
     else if (GL_TRUE == glIsProgram(compilation_step))
     {
-        glGetProgramInfoLog(compilation_step, 0, &error_message_length, nullptr);
+        glGetProgramInfoLog(compilation_step,
+                            max_error_message_length,
+                            nullptr,
+                            &(error_message[0]));
     }
     else
     {
-        ss << "Invalid compilation step, cannot print error message.";
-        Log(LogType::ERROR, ss);
+        Log(LogType::ERROR, "Invalid compilation step, cannot print error message.");
         return;
     }
 
-    if (0 == error_message_length)
-    {
-        ss << "[ note ] The error buffer was empty.";
-        Log(LogType::ERROR, ss);
-        return;
-    }
-
-    error_message.reserve(error_message_length);
-    if (GL_TRUE == glIsShader(compilation_step))
-    {
-        glGetShaderInfoLog(compilation_step, 1024, nullptr, (GLchar*)(*error_message.data()));
-    }
-    else if (GL_TRUE == glIsProgram(compilation_step))
-    {
-        glGetProgramInfoLog(compilation_step, 1024, nullptr, (GLchar*)(*error_message.data()));
-    }
-
-    ss << error_message;
-    Log(LogType::ERROR, ss);
+    Log(LogType::ERROR, error_message);
 }
 
 const GLuint
@@ -111,7 +95,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &vertex_compiled);
     if (GL_TRUE != vertex_compiled)
     {
-        LogGLCompilationError(vertex_shader, "[ vertex shader ] ");
+        LogGLCompilationError(vertex_shader);
         return 0;
     }
 
@@ -126,7 +110,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &fragment_compiled);
     if (fragment_compiled != GL_TRUE)
     {
-        LogGLCompilationError(fragment_shader, "[ fragment shader ] ");
+        LogGLCompilationError(fragment_shader);
         return 0;
     }
 
@@ -139,7 +123,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &error_log_list_length);
     if (error_log_list_length > 0)
     {
-        LogGLCompilationError(program, "[ program ] ");
+        LogGLCompilationError(program);
         return 0;
     }
 
@@ -173,16 +157,31 @@ GetUniformLocation(const GLuint& shader_program, const char* const& uniform_name
 }
 #undef GetUniformLocationImpl
 
+// [ cfarvin::TODO ] Templatize these SetUniformValue calls, remove suffixes
 void
-SetUniformValue(const GLint& uniform_location, const GLfloat* value)
+SetUniformValueMat4(const GLint& uniform_location, const GLfloat* value)
 {
     glUniformMatrix4fv(uniform_location, 1, GL_FALSE, value);
 }
 
 void
-SetUniformValue(const GLuint&       shader_program,
-                const char* const&& uniform_name,
-                const GLfloat*      value)
+SetUniformValueMat4(const GLuint&       shader_program,
+                    const char* const&& uniform_name,
+                    const GLfloat*      value)
 {
-    SetUniformValue(GetUniformLocation(shader_program, uniform_name), value);
+    SetUniformValueMat4(GetUniformLocation(shader_program, uniform_name), value);
+}
+
+void
+SetUniformValue1F(const GLint& uniform_location, const GLfloat& value)
+{
+    glUniform1f(uniform_location, value);
+}
+
+void
+SetUniformValue1F(const GLuint&       shader_program,
+                  const char* const&& uniform_name,
+                  const GLfloat&      value)
+{
+    SetUniformValue1F(GetUniformLocation(shader_program, uniform_name), value);
 }
