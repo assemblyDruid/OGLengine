@@ -7,6 +7,10 @@
 
 #include "logging.h"
 
+// Forward Declaration
+void
+OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height);
+
 Window::Window(const int&&          _gl_major_version,
                const int&&          _gl_minor_version,
                const unsigned int&& _window_width,
@@ -34,6 +38,7 @@ Window::Window(const int&&          _gl_major_version,
     }
 
     glfwMakeContextCurrent(glfw_window);
+    glfwSetWindowSizeCallback(glfw_window, OnWindowResize);
 
     if (GLEW_OK != glewInit())
     {
@@ -44,21 +49,4 @@ Window::Window(const int&&          _gl_major_version,
     // Note: Enables V-Sync
     // Note: Glfw windows are double-buffered by default.
     glfwSwapInterval(1);
-
-    aspect_ratio = (float)_window_width / (float)_window_height;
-}
-
-void
-Window::UpdateAspectRatio()
-{
-    int width  = 0;
-    int height = 0;
-    glfwGetFramebufferSize(glfw_window, &width, &height);
-    aspect_ratio = (float)width / (float)height;
-}
-
-float
-Window::GetAspectRatio()
-{
-    return aspect_ratio;
 }

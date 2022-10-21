@@ -13,21 +13,7 @@ class Window
                    const char* const&&  _window_title,
                    bool&                success);
 
-    float
-    GetAspectRatio();
-
     GLFWwindow* glfw_window;
-
-  private:
-    // These are already stored by GLFW, access them there.
-    /* int width; */
-    /* int height; */
-
-    // [ cfarvin::NOTE ] Need up update aspect ratio on window resize.
-    float aspect_ratio;
-
-    void
-    UpdateAspectRatio();
 };
 
 #endif // windowing_h
