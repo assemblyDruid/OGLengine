@@ -1,5 +1,6 @@
 #include "gl_tools.h"
 
+#include "image_tools.h"
 #include "logging.h"
 
 #include <fstream>
@@ -12,7 +13,9 @@ QueryGlErrors()
     while (gl_error != GL_NO_ERROR)
     {
         gl_error = glGetError();
-        Log(LogType::ERROR, std::stringstream(gl_error));
+        std::stringstream ss;
+        ss << gl_error;
+        Log_E(ss);
         found_error = true;
     }
 
@@ -28,7 +31,7 @@ ReadShaderSource(const char* const&& file_path, std::string& return_shader_sourc
     {
         std::stringstream error_ss;
         error_ss << "Shader source file does not exist. Given:\n\t" << file_path;
-        Log(LogType::ERROR, error_ss);
+        Log_E(error_ss);
         file_stream.close();
         return false;
     }
@@ -41,7 +44,7 @@ ReadShaderSource(const char* const&& file_path, std::string& return_shader_sourc
     {
         std::stringstream error_ss;
         error_ss << "Shader source file was empty. Given:\n\t" << file_path;
-        Log(LogType::ERROR, error_ss);
+        Log_E(error_ss);
         file_stream.close();
         return false;
     }
@@ -73,11 +76,11 @@ LogGLCompilationError(const GLuint& compilation_step)
     }
     else
     {
-        Log(LogType::ERROR, "Invalid compilation step, cannot print error message.");
+        Log_E("Invalid compilation step, cannot print error message.");
         return;
     }
 
-    Log(LogType::ERROR, error_message);
+    Log_E(error_message);
 }
 
 const GLuint
@@ -140,7 +143,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     if (-1 == u_loc)                                                                              \
     {                                                                                             \
         std::string error_message = std::string("No such uniform: ") + std::string(uniform_name); \
-        Log(LogType::ERROR, error_message);                                                       \
+        Log_E(error_message);                                                                     \
     }                                                                                             \
     return u_loc
 
@@ -184,4 +187,148 @@ SetUniformValue1F(const GLuint&       shader_program,
                   const GLfloat&      value)
 {
     SetUniformValue1F(GetUniformLocation(shader_program, uniform_name), value);
+}
+
+GLuint
+GetTexture2DFromImage(const char* const _file_path, bool& _success)
+{
+    _success = true;
+
+    unsigned char* image_data;
+    int            image_width;
+    int            image_height;
+    int            image_channels;
+
+    ImageLoader::LoadImageToMemory(_file_path,
+                                   &image_data,
+                                   image_width,
+                                   image_height,
+                                   image_channels,
+                                   _success);
+
+    if (false == _success) // From ImageLoader::LoadImageToMemory
+    {
+        Log_E("Unable to create texture from file.");
+        _success = false;
+        return 0;
+    }
+
+    GLuint texture_id = 0;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // [ cfarvin::TODO ] This needs implementation here as well as in the image loader.
+    GLenum internal_color_components;
+    switch (image_channels)
+    {
+        // [ cfarvin::TODO ] case: 1 is grayscale
+        case 3:
+        {
+            internal_color_components = GL_RGB;
+            break;
+        }
+        case 4:
+        {
+            internal_color_components = GL_RGBA;
+            break;
+        }
+        default:
+        {
+            std::stringstream ss;
+            ss << "Invalid number of image channels provided: " << image_channels;
+            Log_E(ss);
+            _success = false;
+            return 0;
+        }
+    }
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D,             // Texture type.
+                 0,                         // Level of mipmap detail.
+                 internal_color_components, // Number of internal color components
+                 image_width,               // Image width.
+                 image_height,              // Image height,.
+                 0,                         // Boarder. Must be zero.
+                 GL_RGBA,                   // Pixel format. (We default to loading as RGBA)
+                 GL_UNSIGNED_BYTE,          // Pixel type.
+                 image_data);               // Image data.
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(image_data);
+    if (true == QueryGlErrors())
+    {
+        _success = false;
+        return 0;
+    }
+
+    return texture_id;
+}
+
+GLuint
+GetTestTextureRGB(bool&               _success,
+                  const unsigned int& _image_width,
+                  const unsigned int& _image_height)
+{
+    _success = true;
+
+    GLuint texture_id = 0;
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    unsigned char* pixels;
+    // Create test texture data.
+    {
+        size_t                  row        = 0;
+        constexpr unsigned char red[]      = { 255, 0, 0, 0 };
+        constexpr unsigned char green[]    = { 0, 255, 0, 0 };
+        constexpr unsigned char channels   = 3;
+        const unsigned int      num_pixels = _image_width * _image_height;
+
+        pixels = new unsigned char[num_pixels * sizeof(unsigned char) * channels];
+
+        for (size_t pixel_index = 0; pixel_index < (num_pixels * channels); pixel_index += channels)
+        {
+            row = pixel_index / _image_width;
+            for (size_t channel = 0; channel < channels; channel++)
+            {
+                if (pixel_index - (row * _image_width) >= (_image_width / 2))
+                {
+                    pixels[pixel_index + channel] = red[channel];
+                }
+                else
+                {
+                    pixels[pixel_index + channel] = green[channel];
+                }
+            }
+        }
+    }
+
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D,    // Texture type.
+                 0,                // Level of mipmap detail.
+                 GL_RGB,           // Number of internal color components
+                 _image_width,     // Image width.
+                 _image_height,    // Image height,.
+                 0,                // Boarder. Must be zero.
+                 GL_RGB,           // Pixel format.
+                 GL_UNSIGNED_BYTE, // Pixel type.
+                 pixels);          // Image data.
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    delete pixels;
+    if (true == QueryGlErrors())
+    {
+        _success = false;
+        return 0;
+    }
+
+    return texture_id;
 }

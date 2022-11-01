@@ -6,6 +6,16 @@
 
 #include <string>
 
+struct VertexAttribute
+{
+    GLuint    index;      // Index of generic attribute to be modified.
+    GLint     size;       // Number of components per attribute [1, 4].
+    GLenum    type;       // Data type of elements.
+    GLboolean normalized; // Should be normalized.
+    GLsizei   stride;     // Byte offset between elements within array.
+    GLvoid*   pointer;    // Offset of 1st component in array.
+};
+
 const inline bool
 QueryGlErrors();
 
@@ -34,5 +44,13 @@ extern inline void
 SetUniformValue1F(const GLuint&       shader_program,
                   const char* const&& uniform_name,
                   const GLfloat&      value);
+
+GLuint
+GetTexture2DFromImage(const char* const _file_path, bool& _success);
+
+GLuint
+GetTestTextureRGB(bool&               _success,
+                  const unsigned int& _image_width  = 600,
+                  const unsigned int& _image_height = 600);
 
 #endif

@@ -4,7 +4,6 @@
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
-#include "SOIL2/SOIL2.h"
 #include "gl_tools.h"
 #include "glm/glm.hpp"
 #pragma warning(disable : 4201)
@@ -12,6 +11,7 @@
 #pragma warning(default : 4201)
 #include "assert.h"
 #include "camera.h"
+#include "image_tools.h"
 #include "logging.h"
 #include "model.h"
 #include "windowing.h"
@@ -38,7 +38,11 @@ glm::mat4             p_mat;
 GLuint                mv_location;
 GLuint                p_location;
 
-void
+// [ cfarvin::TODO ] Incorporate textures into model.
+GLuint pyramid_texture;
+GLuint pyramid_texture_coordinates_vbo;
+
+bool
 SetupModels()
 {
     glGenVertexArrays(1, &vao);
@@ -75,8 +79,8 @@ SetupModels()
             +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +0.0f, +1.0f, +0.0f, // Right face
             +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +0.0f, +1.0f, +0.0f, // Back face
             -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, +0.0f, +1.0f, +0.0f, // Left face
-            -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, // Base - left front
-            +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f  // Base - right back
+            -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, // Base - left
+            +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f  // Base - right
         };
         // clang-format on
 
@@ -87,6 +91,37 @@ SetupModels()
                                 GL_STATIC_DRAW,
                                 GL_TRIANGLES);
         sun_pyramid.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+        // Load textures.
+        {
+            bool              success      = false;
+            const char* const texture_path = "./../src/chapter_5/assets/texture.png";
+            pyramid_texture                = GetTexture2DFromImage(texture_path, success);
+
+            if (false == success)
+            {
+                std::stringstream ss;
+                ss << "Unable to load texture at: " << texture_path;
+                return false;
+            }
+
+            // clang-format off
+            const float pyramid_texture_coordinates[36] =
+            {
+                0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, // top and right faces
+                0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, // back and left faces
+                0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,   1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f  // base triangles
+            };
+            // clang-format on
+
+            // [ cfarvin::TODO ] Incorporate texture buffers into model.
+            glGenBuffers(1, &pyramid_texture_coordinates_vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, pyramid_texture_coordinates_vbo);
+            glBufferData(GL_ARRAY_BUFFER,
+                         sizeof(pyramid_texture_coordinates),
+                         pyramid_texture_coordinates,
+                         GL_STATIC_DRAW);
+        }
     }
 
     // Sphere
@@ -123,6 +158,13 @@ SetupModels()
                            GL_TRIANGLE_FAN);
         sphere.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     }
+
+    if (true == QueryGlErrors())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 struct DisplayVars
@@ -191,6 +233,18 @@ Display()
         // Copy matrices to corresponding uniform values (no view yet).
         SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
 
+        // Texturing
+        glBindBuffer(GL_ARRAY_BUFFER, pyramid_texture_coordinates_vbo);
+        glVertexAttribPointer(1,        // Index
+                              2,        // Size
+                              GL_FLOAT, // Type
+                              GL_FALSE, // Normalized
+                              0,        // Stride
+                              0);       // Pointer
+        glEnableVertexAttribArray(1);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pyramid_texture);
+
         // Draw
         sun_pyramid.Draw();
 
@@ -198,100 +252,106 @@ Display()
         matrix_stack.pop(); // Sun rotation matrix removed, sun translation matrix on top.
     }
 
-    //
-    // Sphere: Vertex Buffer Object 2
-    // "Chapter 4 Exercise 1"
-    //
-    {
-        // Matrix Stacks
-        matrix_stack.push(matrix_stack.top()); // Sphere translation slot
-        matrix_stack.top() *= glm::translate(glm::mat4(1.0f),
-                                             glm::vec3(10.0f * cos(current_time),
-                                                       10.0f * sin(current_time),
-                                                       0.0f)); // Sphere translation matrix
-        matrix_stack.push(matrix_stack.top());                 // Sphere rotation slot
-        matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-                                          current_time,
-                                          glm::vec3(0.0f, 1.0f, 1.0f)); // Sphere rotation matrix
-        //
-        // matrix_stack.push(matrix_stack.top());                          // Sphere scale slot
-        // matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
-        //                                  glm::vec3(2.25f, 2.25f, 2.25f)); // Sphere scale matrix
-        //
+    // //
+    // // Sphere: Vertex Buffer Object 2
+    // // "Chapter 4 Exercise 1"
+    // //
+    // {
+    //     // Matrix Stacks
+    //     matrix_stack.push(matrix_stack.top()); // Sphere translation slot
+    //     matrix_stack.top() *= glm::translate(glm::mat4(1.0f),
+    //                                          glm::vec3(10.0f * cos(current_time),
+    //                                                    10.0f * sin(current_time),
+    //                                                    0.0f)); // Sphere translation matrix
+    //     matrix_stack.push(matrix_stack.top());                 // Sphere rotation slot
+    //     matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
+    //                                       current_time,
+    //                                       glm::vec3(0.0f, 1.0f, 1.0f)); // Sphere rotation matrix
+    //     //
+    //     // matrix_stack.push(matrix_stack.top());                          // Sphere scale slot
+    //     // matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
+    //     //                                  glm::vec3(2.25f, 2.25f, 2.25f)); // Sphere scale matrix
+    //     //
 
-        // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+    //     // Copy matrices to corresponding uniform values (no view yet).
+    //     SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
 
-        // Draw
-        sphere.Draw();
+    //     // Draw
+    //     sphere.Draw();
 
-        //
-        // matrix_stack.pop(); // Sphere scale matrix removed, sphere rotation matrix on top.
-        //
+    //     //
+    //     // matrix_stack.pop(); // Sphere scale matrix removed, sphere rotation matrix on top.
+    //     //
 
-        matrix_stack.pop(); // Sphere rotation matrix removed, sphere translation matrix on top.
-        matrix_stack.pop(); // Sphere translation matrix removed, sun translation matrix on top.
-    }
+    //     matrix_stack.pop(); // Sphere rotation matrix removed, sphere translation matrix on top.
+    //     matrix_stack.pop(); // Sphere translation matrix removed, sun translation matrix on top.
+    // }
 
-    //
-    // Cube: Vertex Buffer Object  0
-    // "Earth"
-    //
-    {
-        // Matrix Stacks
-        matrix_stack.push(matrix_stack.top()); // Earth translate (around sun) slot
-        matrix_stack.top() *= glm::translate(
-          glm::mat4(1.0f),
-          glm::vec3(8.0f * sin(current_time),
-                    0.0f,
-                    8.0f * cos(current_time))); // Earth translate (around sun) matrix
-        matrix_stack.push(matrix_stack.top());  // Earth rotation slot
-        matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-                                          5 * current_time,
-                                          glm::vec3(0.0f, 1.0f, 0.0f)); // Earth rotation matrix
+    // //
+    // // Cube: Vertex Buffer Object  0
+    // // "Earth"
+    // //
+    // {
+    //     // Matrix Stacks
+    //     matrix_stack.push(matrix_stack.top()); // Earth translate (around sun) slot
+    //     matrix_stack.top() *= glm::translate(
+    //       glm::mat4(1.0f),
+    //       glm::vec3(8.0f * sin(current_time),
+    //                 0.0f,
+    //                 8.0f * cos(current_time))); // Earth translate (around sun) matrix
+    //     matrix_stack.push(matrix_stack.top());  // Earth rotation slot
+    //     matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
+    //                                       5 * current_time,
+    //                                       glm::vec3(0.0f, 1.0f, 0.0f)); // Earth rotation matrix
 
-        // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+    //     // Copy matrices to corresponding uniform values (no view yet).
+    //     SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
 
-        // Draw
-        cube.Draw();
+    //     // Draw
+    //     cube.Draw();
 
-        matrix_stack.pop(); // Earth rotation matrix removed, earth translate (around sun) on top.
-    }
+    //     matrix_stack.pop(); // Earth rotation matrix removed, earth translate (around sun) on top.
+    // }
 
-    //
-    // Cube: Vertex Buffer Object 0
-    // "Moon"
-    //
-    {
-        // Matrix Stacks
-        matrix_stack.push(matrix_stack.top()); // Moon translate (around earth) slot
-        matrix_stack.top() *= glm::translate(
-          glm::mat4(1.0f),
-          glm::vec3(0.0f,
-                    2.0f * sin(current_time),
-                    2.0f * cos(current_time))); // Moon translate (around earth) matrix
-        matrix_stack.push(matrix_stack.top());  // Moon rotation slot
-        matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-                                          3 * current_time,
-                                          glm::vec3(0.0f, 0.0f, 1.0f)); // Moon rotation matrix
-        matrix_stack.push(matrix_stack.top());                          // Moon scale slot
-        matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
-                                         glm::vec3(0.25f,
-                                                   0.25f,
-                                                   0.25f)); // Moon scale rotation
+    // //
+    // // Cube: Vertex Buffer Object 0
+    // // "Moon"
+    // //
+    // {
+    //     // Matrix Stacks
+    //     matrix_stack.push(matrix_stack.top()); // Moon translate (around earth) slot
+    //     matrix_stack.top() *= glm::translate(
+    //       glm::mat4(1.0f),
+    //       glm::vec3(0.0f,
+    //                 2.0f * sin(current_time),
+    //                 2.0f * cos(current_time))); // Moon translate (around earth) matrix
+    //     matrix_stack.push(matrix_stack.top());  // Moon rotation slot
+    //     matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
+    //                                       3 * current_time,
+    //                                       glm::vec3(0.0f, 0.0f, 1.0f)); // Moon rotation matrix
+    //     matrix_stack.push(matrix_stack.top());                          // Moon scale slot
+    //     matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
+    //                                      glm::vec3(0.25f,
+    //                                                0.25f,
+    //                                                0.25f)); // Moon scale rotation
 
-        // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+    //     // Copy matrices to corresponding uniform values (no view yet).
+    //     SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
 
-        // Draw
-        cube.Draw();
-    }
+    //     // Draw
+    //     cube.Draw();
+    // }
 
     // Clear stack
     for (auto i = 0; i < matrix_stack.size(); i++)
     {
         matrix_stack.pop();
+    }
+
+    // [ cfarvin::DEBUG ]
+    if (true == QueryGlErrors())
+    {
+        return false;
     }
 
     return true;
@@ -324,10 +384,9 @@ const bool
 Initialize()
 {
     constexpr int          gl_major_version = 4;
-    constexpr int          gl_minor_version = 5;
+    constexpr int          gl_minor_version = 6;
     constexpr unsigned int height           = 600;
     constexpr unsigned int width            = 600;
-    constexpr char*        window_title     = "Chapter 4";
 
     // Setup GLEW, GLFW, and the window.
     {
@@ -337,12 +396,17 @@ Initialize()
                             gl_minor_version,          // GL Minor Version
                             width,                     // Window Width
                             height,                    // Window Height
-                            window_title,              // Window Title
+                            "Chapter 5",               // Window Title
                             glew_glfw_window_success); // Error checking
 
         if (false == glew_glfw_window_success)
         {
-            Log(LogType::ERROR, "Unable to set up GLEW/GLFW.");
+            Log_E("Unable to set up GLEW/GLFW.");
+            return false;
+        }
+
+        if (true == QueryGlErrors())
+        {
             return false;
         }
     }
@@ -350,11 +414,11 @@ Initialize()
     // Create the shader program.
     {
         rendering_program = CreateShaderProgram(
-          "./../src/chapter_4/src/shaders/vertex_shader.glsl",
-          "./../src/chapter_4/src/shaders/fragment_shader.glsl");
+          "./../src/chapter_5/src/shaders/vertex_shader.glsl",
+          "./../src/chapter_5/src/shaders/fragment_shader.glsl");
         if (0 == rendering_program)
         {
-            Log(LogType::ERROR, "Unable to create a shader program.");
+            Log_E("Unable to create a shader program.");
             return false;
         }
     }
@@ -366,20 +430,35 @@ Initialize()
                                  0.1f,     // Near clipping plane.
                                  1000.0f); // Far clipping plane.
 
+        glUseProgram(rendering_program);
         p_location = GetUniformLocation(rendering_program, "proj_matrix");
         SetUniformValueMat4(p_location, glm::value_ptr(p_mat));
+
+        if (true == QueryGlErrors())
+        {
+            return false;
+        }
     }
 
     // [ cfarvin::TODO ] These need to be moved.
     // Set initial camera & model positions.
     {
-        camera.SetPosition(0.0f, 0.0f, 20.0f);
+        camera.SetPosition(0.0f, 0.0f, 15.0f);
         earth_cube.SetPosition(0.0f, -2.0f, 0.0f);
         moon_cube.SetPosition(0.0f, 0.0f, 0.0f);
         sun_pyramid.SetPosition(0.0f, 0.0f, 0.0f);
         sphere.SetPosition(0.0f, 0.0f, 0.0f);
 
-        SetupModels();
+        if (false == SetupModels())
+        {
+            Log_E("Unable to set up models.");
+            return false;
+        }
+
+        if (true == QueryGlErrors())
+        {
+            return false;
+        }
     }
 
     return true;
@@ -391,8 +470,7 @@ main()
     bool success = Initialize();
     if (false == success)
     {
-        Log(LogType::ERROR, "Unable to initialize.");
-        std::exit(EXIT_FAILURE);
+        Log_E("Unable to initialize.");
     }
 
     while ((false == glfwWindowShouldClose(window->glfw_window)) && success)
@@ -400,6 +478,11 @@ main()
         success = Display();
         glfwSwapBuffers(window->glfw_window);
         glfwPollEvents();
+    }
+
+    if (false == success)
+    {
+        Log_E("Error during render loop.");
     }
 
     glfwDestroyWindow(window->glfw_window);
@@ -412,12 +495,12 @@ main()
 
     if (true == success)
     {
-        Log(LogType::INFO, "Graceful exit.");
+        Log_I("Graceful exit.");
         std::exit(EXIT_SUCCESS);
     }
     else
     {
-        Log(LogType::ERROR, "Exitied with errors.");
+        Log_E("Exitied with errors.");
         std::exit(EXIT_FAILURE);
     }
 }

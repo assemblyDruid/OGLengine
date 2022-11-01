@@ -11,18 +11,19 @@
 void
 OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height);
 
-Window::Window(const int&&          _gl_major_version,
-               const int&&          _gl_minor_version,
-               const unsigned int&& _window_width,
-               const unsigned int&& _window_height,
-               const char* const&&  _window_title,
-               bool&                _success)
+Window::Window(const int&          _gl_major_version,
+               const int&          _gl_minor_version,
+               const unsigned int& _window_width,
+               const unsigned int& _window_height,
+               const char*         _window_title,
+               bool&               _success)
 {
     _success = true;
     if (!glfwInit())
     {
-        Log(LogType::ERROR, "Unable to initialize GLFW.");
+        Log_E("Unable to initialize GLFW.");
         _success = false;
+        return;
     }
 
     // [ cfarvin::TODO ] Store these and other settings in a configuration file that is parsed on startup?
@@ -33,8 +34,9 @@ Window::Window(const int&&          _gl_major_version,
     glfw_window = glfwCreateWindow(_window_width, _window_height, _window_title, nullptr, nullptr);
     if (nullptr == glfw_window)
     {
-        Log(LogType::ERROR, "Glfw failed to create a valid window.");
+        Log_E("Glfw failed to create a valid window.");
         _success = false;
+        return;
     }
 
     glfwMakeContextCurrent(glfw_window);
@@ -42,8 +44,9 @@ Window::Window(const int&&          _gl_major_version,
 
     if (GLEW_OK != glewInit())
     {
-        Log(LogType::ERROR, "Unable to initialize GLEW.");
+        Log_E("Unable to initialize GLEW.");
         _success = false;
+        return;
     }
 
     // Note: Enables V-Sync
