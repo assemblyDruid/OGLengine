@@ -6,6 +6,16 @@
 
 #include <string>
 
+struct VertexAttribute
+{
+    GLuint    index;      // Index of generic attribute to be modified.
+    GLint     size;       // Number of components per attribute [1, 4].
+    GLenum    type;       // Data type of elements.
+    GLboolean normalized; // Should be normalized.
+    GLsizei   stride;     // Byte offset between elements within array.
+    GLvoid*   pointer;    // Offset of 1st component in array.
+};
+
 const inline bool
 QueryGlErrors();
 

@@ -11,12 +11,12 @@
 void
 OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height);
 
-Window::Window(const int&&          _gl_major_version,
-               const int&&          _gl_minor_version,
-               const unsigned int&& _window_width,
-               const unsigned int&& _window_height,
-               const char* const&&  _window_title,
-               bool&                _success)
+Window::Window(const int&          _gl_major_version,
+               const int&          _gl_minor_version,
+               const unsigned int& _window_width,
+               const unsigned int& _window_height,
+               char*               _window_title,
+               bool&               _success)
 {
     _success = true;
     if (!glfwInit())

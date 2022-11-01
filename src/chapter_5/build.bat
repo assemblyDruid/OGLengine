@@ -15,7 +15,7 @@ SET /A RELEASE_BUILD=0
 ::
 ::------------------------------
 @SET SCRIPT_DIR=%cd%
-@SET APP_NAME=chapter_4
+@SET APP_NAME=chapter_5
 @SET APP_ARCH=x64
 :: @SET SHADER_DIR=%SCRIPT_DIR%\shaders
 :: @SET SHADER_SRC_DIR=%SHADER_DIR%\source
