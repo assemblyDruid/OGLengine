@@ -5,6 +5,8 @@
 #include "GLFW/glfw3.h"
 
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 struct VertexAttribute
 {
@@ -16,8 +18,76 @@ struct VertexAttribute
     GLvoid*   pointer;    // Offset of 1st component in array.
 };
 
-const inline bool
-QueryGlErrors();
+enum class GLBufferType
+{
+    POSITION_COORDINATES,
+    TEXTURE_COORDINATES
+};
+
+struct GLBuffer
+{
+    GLBuffer(const GLuint                        _id,
+             const GLsizei                       _vertex_count,
+             const GLenum                        _drawing_mode,
+             const std::vector<VertexAttribute>& _vertex_attributes,
+             const GLBufferType                  _buffer_type);
+
+    const GLuint                                id;
+    GLBufferType                                type;
+    std::unordered_map<GLuint, VertexAttribute> vertex_attributes;
+    GLsizei                                     vertex_count;
+    GLenum                                      drawing_mode;
+
+  private:
+    friend class BufferStore;
+    GLBuffer();
+};
+
+struct GLBufferStore
+{
+    GLuint
+    AddBuffer(bool&                               _success,
+              const GLuint                        _vao,
+              const GLvoid* const                 _data,
+              const GLsizeiptr                    _size,
+              const GLsizei                       _vertex_count,
+              const GLenum                        _usage,
+              const GLenum                        _drawing_mode,
+              const GLBufferType                  _buffer_type,
+              const std::vector<VertexAttribute>& _vertex_attribute);
+
+    void
+    DeleteAllBuffers();
+
+    void const
+    GetBufferByBufferId(const GLuint& _buffer_id, GLBuffer*& _buffer);
+
+    void const
+    GetBufferByAttributeId(const GLuint& _attribute_id, GLBuffer*& _buffer);
+
+  protected:
+    void
+    ModifyBuffer(bool&               _success,
+                 const GLuint&       _buffer_id,
+                 const GLuint        _vao,
+                 const GLvoid* const _data,
+                 const GLsizeiptr    _size,
+                 const GLsizei       _vertex_count,
+                 const GLenum        _usage,
+                 const GLenum        _drawing_mode);
+    void
+    ModifyBufferFormat(bool&                  _success,
+                       const GLuint&          _attribute_id,
+                       const VertexAttribute& _vertex_attribute);
+
+  private:
+    std::vector<GLBuffer>                 buffer_store;
+    std::unordered_map<GLuint, GLBuffer*> buffers_by_buffer_id;
+    std::unordered_map<GLuint, GLBuffer*> buffers_by_attribute_id;
+};
+
+inline void
+QueryGlErrors(bool& _success);
 
 const GLuint
 CreateShaderProgram(const char* const&& vertex_shader_file_path,
@@ -46,10 +116,13 @@ SetUniformValue1F(const GLuint&       shader_program,
                   const GLfloat&      value);
 
 GLuint
-GetTexture2DFromImage(const char* const _file_path, bool& _success);
+GetTexture2DFromImage(bool&             _success,
+                      const char* const _file_path,
+                      const bool        _attempt_ansiotropic_filtering);
 
 GLuint
 GetTestTextureRGB(bool&               _success,
+                  const char* const   _output_file, // Provide nullptr to skip writing to disk.
                   const unsigned int& _image_width  = 600,
                   const unsigned int& _image_height = 600);
 

@@ -4,9 +4,9 @@
 #include <sstream>
 #include <string>
 
-#define Log_E(msg) Log::Error(msg, std::move(__FILE__), std::move(__LINE__))
-#define Log_W(msg) Log::Warn(msg, std::move(__FILE__), std::move(__LINE__))
-#define Log_I(msg) Log::Info(msg, std::move(__FILE__), std::move(__LINE__))
+#define Log_e(msg) Log::Error(msg, std::move(__FILE__), std::move(__LINE__))
+#define Log_w(msg) Log::Warn(msg, std::move(__FILE__), std::move(__LINE__))
+#define Log_i(msg) Log::Info(msg, std::move(__FILE__), std::move(__LINE__))
 
 struct Log
 {

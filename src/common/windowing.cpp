@@ -21,7 +21,7 @@ Window::Window(const int&          _gl_major_version,
     _success = true;
     if (!glfwInit())
     {
-        Log_E("Unable to initialize GLFW.");
+        Log_e("Unable to initialize GLFW.");
         _success = false;
         return;
     }
@@ -34,7 +34,7 @@ Window::Window(const int&          _gl_major_version,
     glfw_window = glfwCreateWindow(_window_width, _window_height, _window_title, nullptr, nullptr);
     if (nullptr == glfw_window)
     {
-        Log_E("Glfw failed to create a valid window.");
+        Log_e("Glfw failed to create a valid window.");
         _success = false;
         return;
     }
@@ -44,7 +44,7 @@ Window::Window(const int&          _gl_major_version,
 
     if (GLEW_OK != glewInit())
     {
-        Log_E("Unable to initialize GLEW.");
+        Log_e("Unable to initialize GLEW.");
         _success = false;
         return;
     }

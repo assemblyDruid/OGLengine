@@ -2,13 +2,11 @@
 = This file is generated on compilation. Content changes will be overwritten =
 ==============================================================================
 
-There are 4 items tagged TODO:
-    [ TODO ] (chapter_5.cpp, 41): Incorporate textures into model.
-    [ TODO ] (chapter_5.cpp, 117): Incorporate texture buffers into model.
-    [ TODO ] (chapter_5.cpp, 198): Uniform Buffer Object for projection
-    [ TODO ] (chapter_5.cpp, 443): These need to be moved.
+There are 2 items tagged TODO:
+    [ TODO ] (chapter_5.cpp, 69): Uniform Buffer Object for projection
+    [ TODO ] (chapter_5.cpp, 316): These need to be moved.
 
 
 There are 1 items tagged DEBUG:
-    [ DEBUG ] (chapter_5.cpp, 351): 
+    [ DEBUG ] (chapter_5.cpp, 133): 
 

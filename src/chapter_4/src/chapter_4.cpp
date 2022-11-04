@@ -103,10 +103,10 @@ SetupModels()
         constexpr float d_phi = 2 * PI / points_per_ring_count; // Spacing between points in a ring.
 
         float sphere_vertex_positions[sphere_index_count] = {};
-        for (auto ring_number = 0; ring_number < ring_count; ring_number++)
+        for (auto& ring_number = 0; ring_number < ring_count; ring_number++)
         {
             theta += d_theta;
-            for (auto point_number = 0; point_number < points_per_ring_count; point_number++)
+            for (auto& point_number = 0; point_number < points_per_ring_count; point_number++)
             {
                 phi += d_phi;
                 sphere_vertex_positions[index++] = static_cast<float>(sin(theta) * cos(phi)); // X
@@ -289,7 +289,7 @@ Display()
     }
 
     // Clear stack
-    for (auto i = 0; i < matrix_stack.size(); i++)
+    for (auto& i = 0; i < matrix_stack.size(); i++)
     {
         matrix_stack.pop();
     }

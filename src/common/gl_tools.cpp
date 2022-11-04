@@ -1,25 +1,214 @@
 #include "gl_tools.h"
 
+#include "assert.h"
 #include "image_tools.h"
 #include "logging.h"
+#include "stb_image_write.h"
 
 #include <fstream>
+#include <unordered_set>
 
-const bool
-QueryGlErrors()
+#define MAX_MODEL_BUFFER_COUNT 10
+
+GLBuffer::GLBuffer(const GLuint                        _id,
+                   const GLsizei                       _vertex_count,
+                   const GLenum                        _drawing_mode,
+                   const std::vector<VertexAttribute>& _vertex_attributes,
+                   const GLBufferType                  _buffer_type)
+  : id(_id)
+  , vertex_count(_vertex_count)
+  , drawing_mode(_drawing_mode)
+  , type(_buffer_type)
 {
-    bool found_error = false;
-    int  gl_error    = glGetError();
+    for (auto attributes : _vertex_attributes)
+    {
+        vertex_attributes[attributes.index] = attributes;
+    }
+};
+
+GLuint
+GLBufferStore::AddBuffer(bool&                               _success,
+                         const GLuint                        _vao,
+                         const GLvoid* const                 _data,
+                         const GLsizeiptr                    _size,
+                         const GLsizei                       _vertex_count,
+                         const GLenum                        _usage,
+                         const GLenum                        _drawing_mode,
+                         const GLBufferType                  _buffer_type,
+                         const std::vector<VertexAttribute>& _vertex_attributes)
+{
+    assert(nullptr != _data);
+    assert(0 != _size);
+    assert(0 != _vertex_count);
+
+    _success = false;
+
+    GLuint buffer_id;
+    glBindVertexArray(_vao);
+    glGenBuffers(1, &buffer_id);
+
+    if (MAX_MODEL_BUFFER_COUNT >= buffer_store.size())
+    {
+        buffer_store.push_back(
+          GLBuffer(buffer_id, _vertex_count, _drawing_mode, _vertex_attributes, _buffer_type));
+    }
+    else
+    {
+        std::stringstream ss;
+        ss << "Cannot add more buffers to this model's buffer store.\n  Max size: "
+           << MAX_MODEL_BUFFER_COUNT << "\n  Current Size: " << buffer_store.size();
+        Log_e(ss);
+        return 0;
+    }
+
+    assert(0 < buffer_store.size());
+
+    // Add buffer ptr to buffer-id-based map.
+    GLBuffer* buffer                = &(buffer_store[buffer_store.size() - 1]);
+    buffers_by_buffer_id[buffer_id] = buffer;
+
+    // Add buffer ptr to attribute-id-based map.
+    std::unordered_set<GLuint> unique_vertex_indices;
+    size_t                     vector_index = 0;
+    for (auto& attribute : _vertex_attributes)
+    {
+        const GLuint attribute_id = attribute.index;
+        if (unique_vertex_indices.end() == unique_vertex_indices.find(attribute_id))
+        {
+            unique_vertex_indices.insert(attribute_id);
+        }
+        else
+        {
+            std::stringstream ss;
+            ss << "Duplicate VertexAttribute.index detected at _vertex_attributes[" << vector_index
+               << "].";
+            Log_e(ss);
+
+            // Remove from buffer-id-based map.
+            buffers_by_buffer_id.erase(buffer_id);
+            return 0;
+        }
+
+        buffers_by_attribute_id[attribute_id] = buffer;
+        vector_index++;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, buffer_id);
+    glBufferData(GL_ARRAY_BUFFER, _size, _data, _usage);
+
+    _success = true;
+    return buffer_id;
+}
+
+void
+GLBufferStore::DeleteAllBuffers()
+{
+    buffer_store.clear();
+    buffers_by_buffer_id.clear();
+    buffers_by_attribute_id.clear();
+}
+
+void const
+GLBufferStore::GetBufferByBufferId(const GLuint& _buffer_id, GLBuffer*& _buffer)
+{
+    auto search = buffers_by_buffer_id.find(_buffer_id);
+    if (buffers_by_buffer_id.end() != search)
+    {
+        _buffer = search->second;
+    }
+    else
+    {
+        _buffer = nullptr;
+
+        std::stringstream ss;
+        ss << "Unable to find buffer with buffer-id: " << _buffer_id;
+        Log_e(ss);
+    }
+}
+
+void const
+GLBufferStore::GetBufferByAttributeId(const GLuint& _attribute_id, GLBuffer*& _buffer)
+{
+    auto search = buffers_by_attribute_id.find(_attribute_id);
+    if (buffers_by_attribute_id.end() != search)
+    {
+        _buffer = search->second;
+    }
+    else
+    {
+        _buffer = nullptr;
+
+        std::stringstream ss;
+        ss << "Unable to find buffer with attribute-id: " << _attribute_id;
+        Log_e(ss);
+    }
+}
+
+void
+GLBufferStore::ModifyBuffer(bool&               _success,
+                            const GLuint&       _buffer_id,
+                            const GLuint        _vao,
+                            const GLvoid* const _data,
+                            const GLsizeiptr    _size,
+                            const GLsizei       _vertex_count,
+                            const GLenum        _usage,
+                            const GLenum        _drawing_mode)
+{
+    _success    = false;
+    auto search = buffers_by_attribute_id.find(_buffer_id);
+    if (buffers_by_attribute_id.end() == search)
+    {
+        std::stringstream ss;
+        ss << "The buffer with buffer-id " << _buffer_id << " does not exist.";
+        Log_e(ss);
+        return;
+    }
+
+    glBindVertexArray(_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, search->first);
+    glBufferData(GL_ARRAY_BUFFER, _size, _data, _usage);
+
+    search->second->vertex_count = _vertex_count;
+    search->second->drawing_mode = _drawing_mode;
+    _success                     = true;
+}
+
+void
+GLBufferStore::ModifyBufferFormat(bool&                  _success,
+                                  const GLuint&          _attribute_id,
+                                  const VertexAttribute& _vertex_attribute)
+{
+    _success = false;
+
+    auto search = buffers_by_attribute_id.find(_attribute_id);
+    if (buffers_by_attribute_id.end() == search)
+    {
+        std::stringstream ss;
+        ss << "The buffer with attribute-id " << _attribute_id << " does not exist.";
+        Log_e(ss);
+        return;
+    }
+
+    VertexAttribute* vertex_attribute = &(search->second->vertex_attributes[_attribute_id]);
+    *vertex_attribute                 = _vertex_attribute;
+
+    _success = true;
+}
+
+void
+QueryGlErrors(bool& _success)
+{
+    int gl_error = glGetError();
     while (gl_error != GL_NO_ERROR)
     {
         gl_error = glGetError();
         std::stringstream ss;
         ss << gl_error;
-        Log_E(ss);
-        found_error = true;
+        Log_e(ss);
+        _success = false;
     }
 
-    return found_error;
+    _success = true;
 }
 
 // Private to this file.
@@ -31,7 +220,7 @@ ReadShaderSource(const char* const&& file_path, std::string& return_shader_sourc
     {
         std::stringstream error_ss;
         error_ss << "Shader source file does not exist. Given:\n\t" << file_path;
-        Log_E(error_ss);
+        Log_e(error_ss);
         file_stream.close();
         return false;
     }
@@ -44,7 +233,7 @@ ReadShaderSource(const char* const&& file_path, std::string& return_shader_sourc
     {
         std::stringstream error_ss;
         error_ss << "Shader source file was empty. Given:\n\t" << file_path;
-        Log_E(error_ss);
+        Log_e(error_ss);
         file_stream.close();
         return false;
     }
@@ -76,11 +265,11 @@ LogGLCompilationError(const GLuint& compilation_step)
     }
     else
     {
-        Log_E("Invalid compilation step, cannot print error message.");
+        Log_e("Invalid compilation step, cannot print error message.");
         return;
     }
 
-    Log_E(error_message);
+    Log_e(error_message);
 }
 
 const GLuint
@@ -130,7 +319,9 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
         return 0;
     }
 
-    if (true == QueryGlErrors())
+    bool success;
+    QueryGlErrors(success);
+    if (false == success)
     {
         return 0;
     }
@@ -143,7 +334,7 @@ CreateShaderProgram(const char* const&& vertex_shader_file_path,
     if (-1 == u_loc)                                                                              \
     {                                                                                             \
         std::string error_message = std::string("No such uniform: ") + std::string(uniform_name); \
-        Log_E(error_message);                                                                     \
+        Log_e(error_message);                                                                     \
     }                                                                                             \
     return u_loc
 
@@ -190,7 +381,9 @@ SetUniformValue1F(const GLuint&       shader_program,
 }
 
 GLuint
-GetTexture2DFromImage(const char* const _file_path, bool& _success)
+GetTexture2DFromImage(bool&             _success,
+                      const char* const _file_path,
+                      const bool        _attempt_ansiotropic_filtering)
 {
     _success = true;
 
@@ -199,6 +392,7 @@ GetTexture2DFromImage(const char* const _file_path, bool& _success)
     int            image_height;
     int            image_channels;
 
+    // Note: ImageLoader::LoadImageToMemory handles nullptr file path.
     ImageLoader::LoadImageToMemory(_file_path,
                                    &image_data,
                                    image_width,
@@ -208,7 +402,7 @@ GetTexture2DFromImage(const char* const _file_path, bool& _success)
 
     if (false == _success) // From ImageLoader::LoadImageToMemory
     {
-        Log_E("Unable to create texture from file.");
+        Log_e("Unable to create texture from file.");
         _success = false;
         return 0;
     }
@@ -240,7 +434,7 @@ GetTexture2DFromImage(const char* const _file_path, bool& _success)
         {
             std::stringstream ss;
             ss << "Invalid number of image channels provided: " << image_channels;
-            Log_E(ss);
+            Log_e(ss);
             _success = false;
             return 0;
         }
@@ -256,12 +450,22 @@ GetTexture2DFromImage(const char* const _file_path, bool& _success)
                  GL_RGBA,                   // Pixel format. (We default to loading as RGBA)
                  GL_UNSIGNED_BYTE,          // Pixel type.
                  image_data);               // Image data.
+
     glGenerateMipmap(GL_TEXTURE_2D);
+    if ((true == _attempt_ansiotropic_filtering) &&
+        (true == static_cast<bool>(glewIsSupported("GL_EXT_texture_filter_anisotropic"))))
+    {
+        GLfloat ansiotropic_sampling;
+        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &ansiotropic_sampling);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, ansiotropic_sampling);
+    }
 
     stbi_image_free(image_data);
-    if (true == QueryGlErrors())
+
+    QueryGlErrors(_success);
+    if (false == _success)
     {
-        _success = false;
+        Log_e("OpenGL errors during texture creation");
         return 0;
     }
 
@@ -270,6 +474,7 @@ GetTexture2DFromImage(const char* const _file_path, bool& _success)
 
 GLuint
 GetTestTextureRGB(bool&               _success,
+                  const char* const   _output_file, // Provide nullptr to skip writing to disk.
                   const unsigned int& _image_width,
                   const unsigned int& _image_height)
 {
@@ -283,13 +488,13 @@ GetTestTextureRGB(bool&               _success,
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    unsigned char* pixels;
+    unsigned char*          pixels;
+    constexpr unsigned char channels = 3;
     // Create test texture data.
     {
         size_t                  row        = 0;
         constexpr unsigned char red[]      = { 255, 0, 0, 0 };
         constexpr unsigned char green[]    = { 0, 255, 0, 0 };
-        constexpr unsigned char channels   = 3;
         const unsigned int      num_pixels = _image_width * _image_height;
 
         pixels = new unsigned char[num_pixels * sizeof(unsigned char) * channels];
@@ -323,10 +528,25 @@ GetTestTextureRGB(bool&               _success,
                  pixels);          // Image data.
     glGenerateMipmap(GL_TEXTURE_2D);
 
-    delete pixels;
-    if (true == QueryGlErrors())
+    if (nullptr != _output_file)
     {
-        _success = false;
+        int non_exit_disk_write_success = stbi_write_bmp(_output_file,
+                                                         _image_width,
+                                                         _image_height,
+                                                         channels,
+                                                         pixels);
+        if (0 == non_exit_disk_write_success)
+        {
+            Log_w("Unable to write test texture to disk");
+        }
+    }
+
+    delete pixels;
+
+    QueryGlErrors(_success);
+    if (false == _success)
+    {
+        Log_e("OpenGL errors during test texture creation");
         return 0;
     }
 

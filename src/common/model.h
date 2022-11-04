@@ -6,6 +6,8 @@
 #include "glm/glm.hpp"
 #include "object3.h"
 
+#include <unordered_set>
+
 struct Model : protected Object3
 {
     using Object3::GetOrientation;
@@ -17,37 +19,53 @@ struct Model : protected Object3
     glm::mat4 model_matrix;
 };
 
+struct EnabledAttributes
+{
+    GLBuffer*                  buffer;
+    std::unordered_set<GLuint> vertex_attribute_ids;
+};
+
 struct BufferedModel : Model
 {
-    void
-    ArrayBuffer(GLuint     _vao,
-                GLvoid*    _data,
-                GLsizeiptr _size,
-                GLsizei    _vertex_count,
-                GLenum     _usage,
-                GLenum     _drawing_mode);
-
-    // clang-format off
-    void
-    FormatVertexAttribute(GLuint    _index,      // Index of generic attribute to be modified.
-                          GLint     _size,       // Number of components per attribute [1, 4].
-                          GLenum    _type,       // Data type of elements.
-                          GLboolean _normalized, // Should be normalized.
-                          GLsizei   _stride,     // Byte offset between elements within array.
-                          GLvoid*   _pointer);   // Offset of 1st component in array.
-    // clang-format on
+    GLuint
+    AddBuffer(bool&                               _success,
+              const GLuint                        _vao,
+              const GLvoid* const                 _data,
+              const GLsizeiptr                    _size,
+              const GLsizei                       _vertex_count,
+              const GLenum                        _usage,
+              const GLenum                        _drawing_mode,
+              const GLBufferType                  _buffer_tye,
+              const std::vector<VertexAttribute>& _vertex_attribute);
 
     void
+    EnableVertexAttribute(bool& _success, const GLuint& _attribute_id);
+
+    void
+    DisableVertexAttribute(bool& _success, const GLuint& _attribute_id);
+
+    void const
     Draw();
 
   protected:
-    GLuint  vbo;
-    GLsizei vertex_count;
-    GLvoid* vertex_data;
-    GLenum  drawing_mode;
+    GLBufferStore                                                 buffer_store;
+    std::unordered_map</*GlBuffer ID*/ GLuint, EnabledAttributes> enabled_attributes;
+};
 
-  private:
-    VertexAttribute vertex_attribute;
+struct TexturedModel : BufferedModel
+{
+    void
+    CreateTexture(bool& _success, const char* const _file_path);
+
+    void
+    CreateTestTexture(bool&             _success,
+                      const char* const _file_path); // Nullptr to skip write to disk.
+
+    // [ cfarvin::TODO ] should not be public
+    GLuint texture_vbo;
+    GLuint texture_id;
+
+  protected:
 };
 
 #endif

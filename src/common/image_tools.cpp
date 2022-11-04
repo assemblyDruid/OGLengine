@@ -18,13 +18,13 @@ ImageLoader::LoadImageToMemory(const char* const _file_path,
 
     if (nullptr == _file_path)
     {
-        Log_E("Null pointer received for file path.");
+        Log_e("Null pointer received for file path.");
         _success = false;
         return;
     }
     else if (nullptr == _image_data)
     {
-        Log_E("Null pointer received for iamge data.");
+        Log_e("Null pointer received for iamge data.");
         _success = false;
         return;
     }
@@ -34,7 +34,7 @@ ImageLoader::LoadImageToMemory(const char* const _file_path,
     {
         std::stringstream ss;
         ss << "The file " << _file_path << " does not exist.";
-        Log_E(ss);
+        Log_e(ss);
         _success = false;
         return;
     }
@@ -46,7 +46,7 @@ ImageLoader::LoadImageToMemory(const char* const _file_path,
 
     if (0 >= width || 0 >= height || 0 >= channels)
     {
-        Log_E("Loaded image has invalid dimensions.");
+        Log_e("Loaded image has invalid dimensions.");
 
         if (nullptr != *_image_data)
         {
@@ -58,7 +58,7 @@ ImageLoader::LoadImageToMemory(const char* const _file_path,
     }
     else if (nullptr == *_image_data)
     {
-        Log_E("Unable to load iamge.");
+        Log_e("Unable to load iamge.");
         _success = false;
         return;
     }

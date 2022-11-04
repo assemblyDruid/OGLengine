@@ -29,7 +29,7 @@ std::stack<glm::mat4> matrix_stack = {};
 Window*               window;
 Camera                camera;
 BufferedModel         cube;
-BufferedModel         sun_pyramid;
+TexturedModel         sun_pyramid;
 BufferedModel         sphere;
 Model                 earth_cube;
 Model                 moon_cube;
@@ -38,135 +38,6 @@ glm::mat4             p_mat;
 GLuint                mv_location;
 GLuint                p_location;
 
-// [ cfarvin::TODO ] Incorporate textures into model.
-GLuint pyramid_texture;
-GLuint pyramid_texture_coordinates_vbo;
-
-bool
-SetupModels()
-{
-    glGenVertexArrays(1, &vao);
-
-    // Cube
-    {
-        const float cube_vertex_positions[108] = {
-            -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f,
-            +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f,
-            +1.0f, +1.0f, -1.0f, +1.0f, -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f,
-            +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f,
-            -1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f,
-            -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, +1.0f,
-            -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f,
-            -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f,
-            +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, -1.0f
-        };
-
-        cube.ArrayBuffer(vao,
-                         (GLvoid*)cube_vertex_positions,
-                         sizeof(cube_vertex_positions),
-                         (sizeof(cube_vertex_positions) / 3),
-                         GL_STATIC_DRAW,
-                         GL_TRIANGLES);
-        cube.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    }
-
-    // Pyramid
-    {
-        // clang-format off
-        const float pyramid_vertex_positions[54] =
-        {
-            -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +0.0f, +1.0f, +0.0f, // Front face
-            +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +0.0f, +1.0f, +0.0f, // Right face
-            +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +0.0f, +1.0f, +0.0f, // Back face
-            -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, +0.0f, +1.0f, +0.0f, // Left face
-            -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, // Base - left
-            +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f  // Base - right
-        };
-        // clang-format on
-
-        sun_pyramid.ArrayBuffer(vao,
-                                (GLvoid*)pyramid_vertex_positions,
-                                sizeof(pyramid_vertex_positions),
-                                (sizeof(pyramid_vertex_positions) / 3),
-                                GL_STATIC_DRAW,
-                                GL_TRIANGLES);
-        sun_pyramid.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-        // Load textures.
-        {
-            bool              success      = false;
-            const char* const texture_path = "./../src/chapter_5/assets/texture.png";
-            pyramid_texture                = GetTexture2DFromImage(texture_path, success);
-
-            if (false == success)
-            {
-                std::stringstream ss;
-                ss << "Unable to load texture at: " << texture_path;
-                return false;
-            }
-
-            // clang-format off
-            const float pyramid_texture_coordinates[36] =
-            {
-                0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, // top and right faces
-                0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, // back and left faces
-                0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,   1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f  // base triangles
-            };
-            // clang-format on
-
-            // [ cfarvin::TODO ] Incorporate texture buffers into model.
-            glGenBuffers(1, &pyramid_texture_coordinates_vbo);
-            glBindBuffer(GL_ARRAY_BUFFER, pyramid_texture_coordinates_vbo);
-            glBufferData(GL_ARRAY_BUFFER,
-                         sizeof(pyramid_texture_coordinates),
-                         pyramid_texture_coordinates,
-                         GL_STATIC_DRAW);
-        }
-    }
-
-    // Sphere
-    {
-        constexpr float  ring_count            = 25.0f;
-        constexpr float  points_per_ring_count = 55.0f;
-        constexpr size_t sphere_index_count    = static_cast<size_t>(ring_count *
-                                                                  points_per_ring_count * 3);
-
-        size_t          index   = 0;
-        float           theta   = 0.0f;
-        float           phi     = 0.0f;
-        constexpr float d_theta = PI / ring_count;              // Spacing between rings.
-        constexpr float d_phi = 2 * PI / points_per_ring_count; // Spacing between points in a ring.
-
-        float sphere_vertex_positions[sphere_index_count] = {};
-        for (auto ring_number = 0; ring_number < ring_count; ring_number++)
-        {
-            theta += d_theta;
-            for (auto point_number = 0; point_number < points_per_ring_count; point_number++)
-            {
-                phi += d_phi;
-                sphere_vertex_positions[index++] = static_cast<float>(sin(theta) * cos(phi)); // X
-                sphere_vertex_positions[index++] = static_cast<float>(sin(theta) * sin(phi)); // Y
-                sphere_vertex_positions[index++] = static_cast<float>(cos(theta));            // Z
-            }
-        }
-
-        sphere.ArrayBuffer(vao,
-                           sphere_vertex_positions,
-                           sizeof(sphere_vertex_positions),
-                           (sphere_index_count / 3),
-                           GL_STATIC_DRAW,
-                           GL_TRIANGLE_FAN);
-        sphere.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    }
-
-    if (true == QueryGlErrors())
-    {
-        return false;
-    }
-
-    return true;
-}
-
 struct DisplayVars
 {
     glm::vec3 v3;
@@ -174,8 +45,8 @@ struct DisplayVars
 };
 DisplayVars dv;
 
-bool
-Display()
+void
+Display(bool& _success)
 {
     const float current_time = static_cast<float>(glfwGetTime());
     dv.v3                    = glm::vec3(8 * sin(current_time), 0, 8 * cos(current_time));
@@ -234,7 +105,8 @@ Display()
         SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
 
         // Texturing
-        glBindBuffer(GL_ARRAY_BUFFER, pyramid_texture_coordinates_vbo);
+
+        glBindBuffer(GL_ARRAY_BUFFER, sun_pyramid.texture_vbo);
         glVertexAttribPointer(1,        // Index
                               2,        // Size
                               GL_FLOAT, // Type
@@ -243,7 +115,7 @@ Display()
                               0);       // Pointer
         glEnableVertexAttribArray(1);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, pyramid_texture);
+        glBindTexture(GL_TEXTURE_2D, sun_pyramid.texture_id);
 
         // Draw
         sun_pyramid.Draw();
@@ -252,96 +124,6 @@ Display()
         matrix_stack.pop(); // Sun rotation matrix removed, sun translation matrix on top.
     }
 
-    // //
-    // // Sphere: Vertex Buffer Object 2
-    // // "Chapter 4 Exercise 1"
-    // //
-    // {
-    //     // Matrix Stacks
-    //     matrix_stack.push(matrix_stack.top()); // Sphere translation slot
-    //     matrix_stack.top() *= glm::translate(glm::mat4(1.0f),
-    //                                          glm::vec3(10.0f * cos(current_time),
-    //                                                    10.0f * sin(current_time),
-    //                                                    0.0f)); // Sphere translation matrix
-    //     matrix_stack.push(matrix_stack.top());                 // Sphere rotation slot
-    //     matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-    //                                       current_time,
-    //                                       glm::vec3(0.0f, 1.0f, 1.0f)); // Sphere rotation matrix
-    //     //
-    //     // matrix_stack.push(matrix_stack.top());                          // Sphere scale slot
-    //     // matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
-    //     //                                  glm::vec3(2.25f, 2.25f, 2.25f)); // Sphere scale matrix
-    //     //
-
-    //     // Copy matrices to corresponding uniform values (no view yet).
-    //     SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
-
-    //     // Draw
-    //     sphere.Draw();
-
-    //     //
-    //     // matrix_stack.pop(); // Sphere scale matrix removed, sphere rotation matrix on top.
-    //     //
-
-    //     matrix_stack.pop(); // Sphere rotation matrix removed, sphere translation matrix on top.
-    //     matrix_stack.pop(); // Sphere translation matrix removed, sun translation matrix on top.
-    // }
-
-    // //
-    // // Cube: Vertex Buffer Object  0
-    // // "Earth"
-    // //
-    // {
-    //     // Matrix Stacks
-    //     matrix_stack.push(matrix_stack.top()); // Earth translate (around sun) slot
-    //     matrix_stack.top() *= glm::translate(
-    //       glm::mat4(1.0f),
-    //       glm::vec3(8.0f * sin(current_time),
-    //                 0.0f,
-    //                 8.0f * cos(current_time))); // Earth translate (around sun) matrix
-    //     matrix_stack.push(matrix_stack.top());  // Earth rotation slot
-    //     matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-    //                                       5 * current_time,
-    //                                       glm::vec3(0.0f, 1.0f, 0.0f)); // Earth rotation matrix
-
-    //     // Copy matrices to corresponding uniform values (no view yet).
-    //     SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
-
-    //     // Draw
-    //     cube.Draw();
-
-    //     matrix_stack.pop(); // Earth rotation matrix removed, earth translate (around sun) on top.
-    // }
-
-    // //
-    // // Cube: Vertex Buffer Object 0
-    // // "Moon"
-    // //
-    // {
-    //     // Matrix Stacks
-    //     matrix_stack.push(matrix_stack.top()); // Moon translate (around earth) slot
-    //     matrix_stack.top() *= glm::translate(
-    //       glm::mat4(1.0f),
-    //       glm::vec3(0.0f,
-    //                 2.0f * sin(current_time),
-    //                 2.0f * cos(current_time))); // Moon translate (around earth) matrix
-    //     matrix_stack.push(matrix_stack.top());  // Moon rotation slot
-    //     matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-    //                                       3 * current_time,
-    //                                       glm::vec3(0.0f, 0.0f, 1.0f)); // Moon rotation matrix
-    //     matrix_stack.push(matrix_stack.top());                          // Moon scale slot
-    //     matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
-    //                                      glm::vec3(0.25f,
-    //                                                0.25f,
-    //                                                0.25f)); // Moon scale rotation
-
-    //     // Copy matrices to corresponding uniform values (no view yet).
-    //     SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
-
-    //     // Draw
-    //     cube.Draw();
-    // }
-
     // Clear stack
     for (auto i = 0; i < matrix_stack.size(); i++)
     {
@@ -349,14 +131,16 @@ Display()
     }
 
     // [ cfarvin::DEBUG ]
-    if (true == QueryGlErrors())
+    QueryGlErrors(_success);
+    if (false == _success)
     {
-        return false;
+        return;
     }
 
-    return true;
+    _success = true;
 }
 
+// Note: This function is forward declared in windowing.cpp.
 void
 OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height)
 {
@@ -380,9 +164,93 @@ OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height)
     SetUniformValueMat4(p_location, glm::value_ptr(p_mat));
 }
 
-const bool
-Initialize()
+void
+SetupModels(bool& _success)
 {
+    _success = false;
+    glGenVertexArrays(1, &vao);
+
+    // Pyramid
+    {
+        // clang-format off
+        const float pyramid_vertex_positions[54] =
+        {
+            -1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +0.0f, +1.0f, +0.0f, // Front face
+            +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, -1.0f, +0.0f, +1.0f, +0.0f, // Right face
+            +1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +0.0f, +1.0f, +0.0f, // Back face
+            -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, +1.0f, +0.0f, +1.0f, +0.0f, // Left face
+            -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, +1.0f, // Base - left
+            +1.0f, -1.0f, +1.0f, -1.0f, -1.0f, -1.0f, +1.0f, -1.0f, -1.0f  // Base - right
+        };
+        // clang-format on
+
+        GLuint                       position_attribute_id = 0;
+        std::vector<VertexAttribute> position_attributes;
+        position_attributes.push_back(
+          { position_attribute_id, // Index of generic attribute to be modified.
+            3,                     // Number of components per attribute [1, 4].
+            GL_FLOAT,              // Data type of elements.
+            GL_FALSE,              // Should be normalized.
+            0,                     // Byte offset between elements within array.
+            0 });                  // Offset of 1st component in array.
+
+        sun_pyramid.AddBuffer(_success,
+                              vao,
+                              (GLvoid*)pyramid_vertex_positions,
+                              sizeof(pyramid_vertex_positions),
+                              (sizeof(pyramid_vertex_positions) / 3),
+                              GL_STATIC_DRAW,
+                              GL_TRIANGLES,
+                              GLBufferType::POSITION_COORDINATES,
+                              position_attributes);
+
+        if (false == _success)
+        {
+            Log_e("Unable to create pyramid position buffer.");
+            return;
+        }
+
+        sun_pyramid.EnableVertexAttribute(_success, position_attribute_id);
+        if (false == _success)
+        {
+            Log_e("Unable to enable position vertex attribute.");
+            return;
+        }
+
+        // clang-format off
+        const float pyramid_texture_coordinates[36] =
+        {
+            0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, // top and right faces
+            0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f,   0.0f, 0.0f, 1.0f, 0.0f, 0.5f, 1.0f, // back and left faces
+            0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f,   1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f  // base triangles
+        };
+        // clang-format on
+
+        sun_pyramid.CreateTexture(_success, "./../src/chapter_5/assets/texture.png");
+        // Load textures.
+        {
+            glGenBuffers(1, &sun_pyramid.texture_vbo);
+            glBindBuffer(GL_ARRAY_BUFFER, sun_pyramid.texture_vbo);
+            glBufferData(GL_ARRAY_BUFFER,
+                         sizeof(pyramid_texture_coordinates),
+                         pyramid_texture_coordinates,
+                         GL_STATIC_DRAW);
+        }
+    }
+
+    QueryGlErrors(_success);
+    if (false == _success)
+    {
+        Log_e("OpenGL errors during model setup.");
+    }
+
+    return;
+}
+
+void
+Initialize(bool& _success)
+{
+    _success                                = false;
     constexpr int          gl_major_version = 4;
     constexpr int          gl_minor_version = 6;
     constexpr unsigned int height           = 600;
@@ -390,24 +258,24 @@ Initialize()
 
     // Setup GLEW, GLFW, and the window.
     {
-        bool glew_glfw_window_success = true;
+        window = new Window(gl_major_version, // GL Major Version
+                            gl_minor_version, // GL Minor Version
+                            width,            // Window Width
+                            height,           // Window Height
+                            "Chapter 5",      // Window Title
+                            _success);        // Error checking
 
-        window = new Window(gl_major_version,          // GL Major Version
-                            gl_minor_version,          // GL Minor Version
-                            width,                     // Window Width
-                            height,                    // Window Height
-                            "Chapter 5",               // Window Title
-                            glew_glfw_window_success); // Error checking
-
-        if (false == glew_glfw_window_success)
+        if (false == _success)
         {
-            Log_E("Unable to set up GLEW/GLFW.");
-            return false;
+            Log_e("Unable to set up GLEW/GLFW.");
+            return;
         }
 
-        if (true == QueryGlErrors())
+        QueryGlErrors(_success);
+        if (false == _success)
         {
-            return false;
+            Log_e("OpenGL errors in window setup.");
+            return;
         }
     }
 
@@ -418,8 +286,11 @@ Initialize()
           "./../src/chapter_5/src/shaders/fragment_shader.glsl");
         if (0 == rendering_program)
         {
-            Log_E("Unable to create a shader program.");
-            return false;
+            Log_e("Unable to create a shader program.");
+            glfwDestroyWindow(window->glfw_window);
+            glfwTerminate();
+            _success = false;
+            return;
         }
     }
 
@@ -434,9 +305,11 @@ Initialize()
         p_location = GetUniformLocation(rendering_program, "proj_matrix");
         SetUniformValueMat4(p_location, glm::value_ptr(p_mat));
 
-        if (true == QueryGlErrors())
+        QueryGlErrors(_success);
+        if (false == _success)
         {
-            return false;
+            Log_e("Unable to setup perspective matrix.");
+            return;
         }
     }
 
@@ -449,40 +322,46 @@ Initialize()
         sun_pyramid.SetPosition(0.0f, 0.0f, 0.0f);
         sphere.SetPosition(0.0f, 0.0f, 0.0f);
 
-        if (false == SetupModels())
+        SetupModels(_success);
+        if (false == _success)
         {
-            Log_E("Unable to set up models.");
-            return false;
+            Log_e("Unable to set up models.");
+            _success = false;
+            return;
         }
 
-        if (true == QueryGlErrors())
+        QueryGlErrors(_success);
+        if (false == _success)
         {
-            return false;
+            Log_e("OpenGL errors in model setup.");
+            return;
         }
     }
 
-    return true;
+    _success = true;
 }
 
 int
 main()
 {
-    bool success = Initialize();
+    bool success;
+    Initialize(success);
     if (false == success)
     {
-        Log_E("Unable to initialize.");
+        Log_e("Unable to initialize.");
+        std::exit(EXIT_FAILURE);
     }
 
     while ((false == glfwWindowShouldClose(window->glfw_window)) && success)
     {
-        success = Display();
+        Display(success);
         glfwSwapBuffers(window->glfw_window);
         glfwPollEvents();
     }
 
     if (false == success)
     {
-        Log_E("Error during render loop.");
+        Log_e("Error during render loop.");
     }
 
     glfwDestroyWindow(window->glfw_window);
@@ -495,12 +374,12 @@ main()
 
     if (true == success)
     {
-        Log_I("Graceful exit.");
+        Log_i("Graceful exit.");
         std::exit(EXIT_SUCCESS);
     }
     else
     {
-        Log_E("Exitied with errors.");
+        Log_e("Exitied with errors.");
         std::exit(EXIT_FAILURE);
     }
 }
