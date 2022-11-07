@@ -1,12 +1,12 @@
-#version 450
+#version 460
 
-layout (location = 0) in vec3 position;
+layout (location = 0) in vec3 _position;
+layout (location = 1) in vec2 _texture_coordinates;
 
 uniform mat4 proj_matrix;
 uniform mat4 mv_matrix;
 
-out vec4 color;
-out vec4 varying_color;
+out vec2 texture_coordinates;
 
 //
 // Retuns a transformation matrix.
@@ -69,6 +69,6 @@ mat4 GetRotateZMatrix(float rad)
 
 void main()
 {
-    gl_Position = proj_matrix * mv_matrix * vec4(position, 1.0);
-    varying_color = vec4(position, 1.0) * 0.5 + vec4(0.5, 0.5, 0.5, 0.5);
+    gl_Position = proj_matrix * mv_matrix * vec4(_position, 1.0);
+    texture_coordinates = _texture_coordinates;
 }

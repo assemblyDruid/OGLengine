@@ -2,7 +2,6 @@
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
-#include "SOIL2/SOIL2.h"
 #include "gl_tools.h"
 #include "glm/glm.hpp"
 #include "logging.h"
@@ -27,8 +26,9 @@ Init(GLFWwindow* window)
     {
     }
 
-    rendering_program = CreateShaderProgram("./../src/chapter_2/src/shaders/vertex_shader.glsl",
-                                            "./../src/chapter_2/src/shaders/fragment_shader.glsl");
+    rendering_program = glt::CreateShaderProgram(
+      "./../src/chapter_2/src/shaders/vertex_shader.glsl",
+      "./../src/chapter_2/src/shaders/fragment_shader.glsl");
 
     // Note: OGL requires at least one VAO when shaders are being used.
     glGenVertexArrays(NUM_VAO, vao);
@@ -38,7 +38,6 @@ Init(GLFWwindow* window)
 void
 Display(GLFWwindow* window, double current_time)
 {
-    // [ cfarvin::TODO ] We are not using the window or current_time arguments from the chapter yet.
     if (window || current_time)
     {
     }
@@ -65,11 +64,10 @@ main()
 {
     if (!glfwInit())
     {
-        Log(LogType::ERROR, "Unable to initialize GLFW.");
+        Log_e("Unable to initialize GLFW.");
         std::exit(EXIT_FAILURE);
     }
 
-    // [ cfarvin::TODO ] Store these and other settings in a configuration file that is parsed on startup?
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
 
@@ -79,7 +77,7 @@ main()
 
     if (GLEW_OK != glewInit())
     {
-        Log(LogType::ERROR, "Unable to initialize GLEW.");
+        Log_e("Unable to initialize GLEW.");
         std::exit(EXIT_FAILURE);
     }
 

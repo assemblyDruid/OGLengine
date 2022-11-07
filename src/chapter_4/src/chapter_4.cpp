@@ -4,7 +4,6 @@
 
 #include "GL/glew.h"
 #include "GLFW/glfw3.h"
-#include "SOIL2/SOIL2.h"
 #include "gl_tools.h"
 #include "glm/glm.hpp"
 #pragma warning(disable : 4201)
@@ -39,8 +38,9 @@ GLuint                mv_location;
 GLuint                p_location;
 
 void
-SetupModels()
+SetupModels(bool& _success)
 {
+    _success = false;
     glGenVertexArrays(1, &vao);
 
     // Cube
@@ -57,13 +57,35 @@ SetupModels()
             +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, -1.0f
         };
 
-        cube.ArrayBuffer(vao,
-                         (GLvoid*)cube_vertex_positions,
-                         sizeof(cube_vertex_positions),
-                         (sizeof(cube_vertex_positions) / 3),
-                         GL_STATIC_DRAW,
-                         GL_TRIANGLES);
-        cube.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        GLuint                            position_attribute_id = 0;
+        std::vector<glt::VertexAttribute> position_attributes;
+        position_attributes.push_back({ 0, 3, GL_FLOAT, GL_FALSE, 0, 0 });
+
+        cube.AddBuffer(_success,
+                       std::move(vao),
+                       (GLvoid*)cube_vertex_positions,
+                       sizeof(cube_vertex_positions),
+                       (sizeof(cube_vertex_positions) / 3),
+                       GL_STATIC_DRAW,
+                       GL_TRIANGLES,
+                       glt::GLBufferType::POSITION_COORDINATES,
+                       position_attributes);
+
+        if (false == _success)
+        {
+            Log_e("Unable to create cube buffer");
+            return;
+        }
+
+        cube.EnableVertexAttribute(_success,
+                                   glt::GLBufferType::POSITION_COORDINATES,
+                                   std::move(position_attribute_id));
+
+        if (false == _success)
+        {
+            Log_e("Unable to enable cube position vertex attribute.");
+            return;
+        }
     }
 
     // Pyramid
@@ -80,13 +102,35 @@ SetupModels()
         };
         // clang-format on
 
-        sun_pyramid.ArrayBuffer(vao,
-                                (GLvoid*)pyramid_vertex_positions,
-                                sizeof(pyramid_vertex_positions),
-                                (sizeof(pyramid_vertex_positions) / 3),
-                                GL_STATIC_DRAW,
-                                GL_TRIANGLES);
-        sun_pyramid.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        GLuint                            position_attribute_id = 0;
+        std::vector<glt::VertexAttribute> position_attributes;
+        position_attributes.push_back({ 0, 3, GL_FLOAT, GL_FALSE, 0, 0 });
+
+        sun_pyramid.AddBuffer(_success,
+                              std::move(vao),
+                              (GLvoid*)pyramid_vertex_positions,
+                              sizeof(pyramid_vertex_positions),
+                              (sizeof(pyramid_vertex_positions) / 3),
+                              GL_STATIC_DRAW,
+                              GL_TRIANGLES,
+                              glt::GLBufferType::POSITION_COORDINATES,
+                              position_attributes);
+
+        if (false == _success)
+        {
+            Log_e("Unable to create pyramid buffer");
+            return;
+        }
+
+        sun_pyramid.EnableVertexAttribute(_success,
+                                          glt::GLBufferType::POSITION_COORDINATES,
+                                          std::move(position_attribute_id));
+
+        if (false == _success)
+        {
+            Log_e("Unable to enable pyramid position vertex attribute.");
+            return;
+        }
     }
 
     // Sphere
@@ -115,13 +159,35 @@ SetupModels()
             }
         }
 
-        sphere.ArrayBuffer(vao,
-                           sphere_vertex_positions,
-                           sizeof(sphere_vertex_positions),
-                           (sphere_index_count / 3),
-                           GL_STATIC_DRAW,
-                           GL_TRIANGLE_FAN);
-        sphere.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        GLuint                            position_attribute_id = 0;
+        std::vector<glt::VertexAttribute> position_attributes;
+        position_attributes.push_back({ 0, 3, GL_FLOAT, GL_FALSE, 0, 0 });
+
+        sphere.AddBuffer(_success,
+                         std::move(vao),
+                         (GLvoid*)sphere_vertex_positions,
+                         sizeof(sphere_vertex_positions),
+                         (sizeof(sphere_vertex_positions) / 3),
+                         GL_STATIC_DRAW,
+                         GL_TRIANGLE_FAN,
+                         glt::GLBufferType::POSITION_COORDINATES,
+                         position_attributes);
+
+        if (false == _success)
+        {
+            Log_e("Unable to create pyramid buffer");
+            return;
+        }
+
+        sphere.EnableVertexAttribute(_success,
+                                     glt::GLBufferType::POSITION_COORDINATES,
+                                     std::move(position_attribute_id));
+
+        if (false == _success)
+        {
+            Log_e("Unable to enable pyramid position vertex attribute.");
+            return;
+        }
     }
 }
 
@@ -132,9 +198,11 @@ struct DisplayVars
 };
 DisplayVars dv;
 
-bool
-Display()
+void
+Display(bool& _success)
 {
+    _success = false;
+
     const float current_time = static_cast<float>(glfwGetTime());
     dv.v3                    = glm::vec3(8 * sin(current_time), 0, 8 * cos(current_time));
 
@@ -151,12 +219,11 @@ Display()
         glDepthFunc(GL_LEQUAL);
 
         glUseProgram(rendering_program);
-        mv_location = GetUniformLocation(rendering_program, "mv_matrix");
+        mv_location = glt::GetUniformLocation(std::move(rendering_program), "mv_matrix");
 
-        // [ cfarvin::TODO ] Uniform Buffer Object for projection
         // Projection Matrix
-        p_location = GetUniformLocation(rendering_program, "proj_matrix");
-        SetUniformValueMat4(p_location, glm::value_ptr(p_mat));
+        p_location = glt::GetUniformLocation(std::move(rendering_program), "proj_matrix");
+        glt::SetUniformValueMat4(std::move(p_location), glm::value_ptr(p_mat));
     }
 
     //
@@ -189,7 +256,7 @@ Display()
                                          glm::vec3(2.25f, 2.25f, 2.25f)); // Sun scale matrix
 
         // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+        glt::SetUniformValueMat4(std::move(mv_location), glm::value_ptr(matrix_stack.top()));
 
         // Draw
         sun_pyramid.Draw();
@@ -220,7 +287,7 @@ Display()
         //
 
         // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+        glt::SetUniformValueMat4(std::move(mv_location), glm::value_ptr(matrix_stack.top()));
 
         // Draw
         sphere.Draw();
@@ -251,7 +318,7 @@ Display()
                                           glm::vec3(0.0f, 1.0f, 0.0f)); // Earth rotation matrix
 
         // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+        glt::SetUniformValueMat4(std::move(mv_location), glm::value_ptr(matrix_stack.top()));
 
         // Draw
         cube.Draw();
@@ -282,7 +349,7 @@ Display()
                                                    0.25f)); // Moon scale rotation
 
         // Copy matrices to corresponding uniform values (no view yet).
-        SetUniformValueMat4(mv_location, glm::value_ptr(matrix_stack.top()));
+        glt::SetUniformValueMat4(std::move(mv_location), glm::value_ptr(matrix_stack.top()));
 
         // Draw
         cube.Draw();
@@ -294,7 +361,13 @@ Display()
         matrix_stack.pop();
     }
 
-    return true;
+    glt::QueryGLErrors(_success);
+    if (false == _success)
+    {
+        Log_e("OpenGL error in reder loop.");
+    }
+
+    return;
 }
 
 void
@@ -316,18 +389,19 @@ OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height)
                              0.1f,     // Near clipping plane.
                              1000.0f); // Far clipping plane.
 
-    p_location = GetUniformLocation(rendering_program, "proj_matrix");
-    SetUniformValueMat4(p_location, glm::value_ptr(p_mat));
+    p_location = glt::GetUniformLocation(std::move(rendering_program), "proj_matrix");
+    glt::SetUniformValueMat4(std::move(p_location), glm::value_ptr(p_mat));
 }
 
-const bool
-Initialize()
+void
+Initialize(bool& _success)
 {
+    _success = false;
+
     constexpr int          gl_major_version = 4;
     constexpr int          gl_minor_version = 5;
     constexpr unsigned int height           = 600;
     constexpr unsigned int width            = 600;
-    constexpr char*        window_title     = "Chapter 4";
 
     // Setup GLEW, GLFW, and the window.
     {
@@ -337,25 +411,25 @@ Initialize()
                             gl_minor_version,          // GL Minor Version
                             width,                     // Window Width
                             height,                    // Window Height
-                            window_title,              // Window Title
+                            "Chapter 4",               // Window Title
                             glew_glfw_window_success); // Error checking
 
         if (false == glew_glfw_window_success)
         {
-            Log(LogType::ERROR, "Unable to set up GLEW/GLFW.");
-            return false;
+            Log_e("Unable to set up GLEW/GLFW.");
+            return;
         }
     }
 
     // Create the shader program.
     {
-        rendering_program = CreateShaderProgram(
+        rendering_program = glt::CreateShaderProgram(
           "./../src/chapter_4/src/shaders/vertex_shader.glsl",
           "./../src/chapter_4/src/shaders/fragment_shader.glsl");
         if (0 == rendering_program)
         {
-            Log(LogType::ERROR, "Unable to create a shader program.");
-            return false;
+            Log_e("Unable to create a shader program.");
+            return;
         }
     }
 
@@ -366,8 +440,8 @@ Initialize()
                                  0.1f,     // Near clipping plane.
                                  1000.0f); // Far clipping plane.
 
-        p_location = GetUniformLocation(rendering_program, "proj_matrix");
-        SetUniformValueMat4(p_location, glm::value_ptr(p_mat));
+        p_location = glt::GetUniformLocation(std::move(rendering_program), "proj_matrix");
+        glt::SetUniformValueMat4(std::move(p_location), glm::value_ptr(p_mat));
     }
 
     // [ cfarvin::TODO ] These need to be moved.
@@ -379,25 +453,31 @@ Initialize()
         sun_pyramid.SetPosition(0.0f, 0.0f, 0.0f);
         sphere.SetPosition(0.0f, 0.0f, 0.0f);
 
-        SetupModels();
+        SetupModels(_success);
+        if (false == _success)
+        {
+            Log_e("Unable to setup models.");
+        }
     }
 
-    return true;
+    _success = true;
 }
 
 int
 main()
 {
-    bool success = Initialize();
+    bool success = false;
+
+    Initialize(success);
     if (false == success)
     {
-        Log(LogType::ERROR, "Unable to initialize.");
+        Log_e("Unable to initialize.");
         std::exit(EXIT_FAILURE);
     }
 
     while ((false == glfwWindowShouldClose(window->glfw_window)) && success)
     {
-        success = Display();
+        Display(success);
         glfwSwapBuffers(window->glfw_window);
         glfwPollEvents();
     }
@@ -412,12 +492,12 @@ main()
 
     if (true == success)
     {
-        Log(LogType::INFO, "Graceful exit.");
+        Log_e("Graceful exit.");
         std::exit(EXIT_SUCCESS);
     }
     else
     {
-        Log(LogType::ERROR, "Exitied with errors.");
+        Log_e("Exited with errors.");
         std::exit(EXIT_FAILURE);
     }
 }

@@ -14,15 +14,9 @@ struct Camera : protected Object3
     void
     SetPosition(const float&& _x, const float&& _y, const float&& _z);
 
-    void
-    SetOrientation(const float&& _i, const float&& _j, const float&& _k);
-
   private:
     void
     UpdateTranslationMatrix();
-
-    void
-    UpdateOrientationMatrix();
 
     glm::mat4       ijk_orientation;
     glm::mat4       xyz_translation;

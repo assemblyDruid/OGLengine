@@ -2,8 +2,6 @@
 = This file is generated on compilation. Content changes will be overwritten =
 ==============================================================================
 
-There are 3 items tagged TODO:
-    [ TODO ] (chapter_2.cpp, 25): We are not using the window argument from the chapter yet.
-    [ TODO ] (chapter_2.cpp, 41): We are not using the window or current_time arguments from the chapter yet.
-    [ TODO ] (chapter_2.cpp, 72): Store these and other settings in a configuration file that is parsed on startup?
+There are 1 items tagged TODO:
+    [ TODO ] (chapter_2.cpp, 24): We are not using the window argument from the chapter yet.
 

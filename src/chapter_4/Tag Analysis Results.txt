@@ -2,7 +2,6 @@
 = This file is generated on compilation. Content changes will be overwritten =
 ==============================================================================
 
-There are 2 items tagged TODO:
-    [ TODO ] (chapter_4.cpp, 156): Uniform Buffer Object for projection
-    [ TODO ] (chapter_4.cpp, 373): These need to be moved.
+There are 1 items tagged TODO:
+    [ TODO ] (chapter_4.cpp, 447): These need to be moved.
 

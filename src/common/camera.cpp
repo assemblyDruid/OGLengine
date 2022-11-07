@@ -14,7 +14,6 @@ Camera::Camera()
     UpdateTranslationMatrix();
 
     ijk_orientation = glm::mat4(1.0f);
-    UpdateOrientationMatrix();
 };
 
 void
@@ -34,25 +33,9 @@ Camera::SetPosition(const float&& _x, const float&& _y, const float&& _z)
 }
 
 void
-Camera::SetOrientation(const float&& _i, const float&& _j, const float&& _k)
-{
-    Object3::SetOrientation(std::move(_i), std::move(_j), std::move(_k));
-    UpdateOrientationMatrix();
-}
-
-void
 Camera::UpdateTranslationMatrix()
 {
     xyz_translation[3].x = -position.x;
     xyz_translation[3].y = -position.y;
     xyz_translation[3].z = -position.z;
-}
-
-// [ cfarvin::TODO ] This impl is likely incorrect.
-void
-Camera::UpdateOrientationMatrix()
-{
-    ijk_orientation[0].x = orientation.i;
-    ijk_orientation[1].y = orientation.j;
-    ijk_orientation[2].z = orientation.k;
 }

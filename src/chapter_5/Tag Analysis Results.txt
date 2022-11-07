@@ -3,6 +3,10 @@
 ==============================================================================
 
 There are 2 items tagged TODO:
-    [ TODO ] (chapter_5.cpp, 156): Uniform Buffer Object for projection
-    [ TODO ] (chapter_5.cpp, 373): These need to be moved.
+    [ TODO ] (chapter_5.cpp, 66): Uniform Buffer Object for projection
+    [ TODO ] (chapter_5.cpp, 326): These need to be moved.
+
+
+There are 1 items tagged DEBUG:
+    [ DEBUG ] (chapter_5.cpp, 117): 
 

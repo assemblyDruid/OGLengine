@@ -94,7 +94,7 @@ pushd msvc_landfill >nul
 :: /LIBPATH:<arg>       Specify library directory/directories.
 
 :: General Parameters
-SET GeneralParameters=/Oi /Qpar /EHsc /GL /GS /nologo /Ot /DGLEW_STATIC
+SET GeneralParameters=/Oi /Qpar /EHsc /GL /GS /nologo /Ot /std:c++latest /DGLEW_STATIC
 
 :: Debug Paramters
 SET DebugParameters=/Od /W4 /WX /Z7 /MTd
@@ -142,7 +142,12 @@ SET ReleaseLinkParameters=glfw3_mt.lib
 SET SourceFiles=%SCRIPT_DIR%\src\%APP_NAME%.cpp ^
 %SCRIPT_DIR%\..\..\include\GL\glew.c ^
 %SCRIPT_DIR%\..\..\src\common\logging.cpp ^
-%SCRIPT_DIR%\..\..\src\common\gl_tools.cpp
+%SCRIPT_DIR%\..\..\src\common\gl_tools.cpp ^
+%SCRIPT_DIR%\..\..\src\common\image_tools.cpp
+
+:: STB Image
+SET SourceFiles=%SourceFiles% ^
+%SCRIPT_DIR%\..\..\include\stb\stb_image.cpp
 
 ::
 :: Compiler Invocation
