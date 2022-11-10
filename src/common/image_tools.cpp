@@ -1,41 +1,44 @@
+// clang-format off
+#include "pch.h"
+// clang-format on
+
 #include "image_tools.h"
 
+#include "fileio.h"
 #include "logging.h"
-#include "stb/stb_image.h"
 
-#include <filesystem>
-#include <sstream>
-
-const void
-ImageLoader::LoadImageToMemory(const char* const _file_path,
-                               unsigned char**   _image_data,
-                               int&              _image_width,
-                               int&              _image_height,
-                               int&              _image_channels,
-                               bool&             _success)
+void
+LoadImageToMemory(bool&             _success_out,
+                  const char* const _file_path,
+                  unsigned char**   _image_data,
+                  int&              _image_width,
+                  int&              _image_height,
+                  int&              _image_channels)
 {
-    _success = true;
+    _success_out = true;
 
     if (nullptr == _file_path)
     {
         Log_e("Null pointer received for file path.");
-        _success = false;
+        _success_out = false;
         return;
     }
     else if (nullptr == _image_data)
     {
         Log_e("Null pointer received for iamge data.");
-        _success = false;
+        _success_out = false;
         return;
     }
 
-    std::filesystem::path file_path(_file_path);
-    if (false == std::filesystem::exists(file_path))
+    bool file_exists;
+    bool file_empty;
+    FileExistsOrEmpty(_file_path, file_exists, file_empty);
+    if ((false == file_exists) || (true == file_empty))
     {
         std::stringstream ss;
-        ss << "The file " << _file_path << " does not exist.";
+        ss << "The file " << _file_path << " does not exist or is empty.";
         Log_e(ss);
-        _success = false;
+        _success_out = false;
         return;
     }
 
@@ -53,13 +56,13 @@ ImageLoader::LoadImageToMemory(const char* const _file_path,
             delete *_image_data;
         }
 
-        _success = false;
+        _success_out = false;
         return;
     }
     else if (nullptr == *_image_data)
     {
         Log_e("Unable to load iamge.");
-        _success = false;
+        _success_out = false;
         return;
     }
 

@@ -1,9 +1,11 @@
 #ifndef model_h
 #define model_h
 
-#include "GL/glew.h"
+// clang-format off
+#include "pch.h"
+// clang-format on
+
 #include "gl_tools.h"
-#include "glm/glm.hpp"
 #include "object3.h"
 
 struct Model : protected Object3
@@ -17,92 +19,119 @@ struct Model : protected Object3
     glm::mat4 model_matrix;
 };
 
-struct EnabledAttributes
+struct ModelMatrixInfo
 {
-    glt::GLBuffer*                     buffer = nullptr;
-    std::vector<glt::VertexAttribute*> vertex_attributes;
+    glm::mat4 model_matrix;
+    GLuint    model_matrix_layout_location;
+    GLuint    rendering_program_id;
 };
 
 struct BufferedModel : Model
 {
-    GLuint
-    AddBuffer(bool&                                    _success,
-              const GLuint&&                           _vao,
-              const GLvoid* const                      _data,
-              const GLsizeiptr&&                       _size,
-              const GLsizei&&                          _vertex_count,
-              const GLenum&&                           _usage,
-              const GLenum&&                           _drawing_mode,
-              const glt::GLBufferType&&                _buffer_tye,
-              const std::vector<glt::VertexAttribute>& _vertex_attribute);
+    void
+    AddVertexArrayObject(bool& _success_out, GLuint& _vao_id_out);
 
     void
-    EnableVertexAttribute(bool&                     _success,
-                          const glt::GLBufferType&& _buffer_type,
-                          const GLuint&             _attribute_id);
+    AddModelMatrix(bool&             _success_out,
+                   const glm::mat4&  _model_matrix_in,
+                   const GLuint&     _rendering_program_id_in,
+                   const char* const _matrix_uniform_name_in);
 
-    void const
-    Draw();
+    GLuint
+    AddArrayBuffer(
+      bool&                                              _success_out,
+      const GLvoid* const                                _data_in,
+      const GLsizeiptr&&                                 _data_size_bytes_in,
+      const GLsizei&&                                    _target_buffer_element_count_in,
+      const GLenum&&                                     _target_buffer_usage_type_in,
+      const GLenum&&                                     _primitive_drawing_mode_in,
+      const std::vector<glt::VertexAttributeDescriptor>& _glt_vertex_attribute_pointers_in);
+
+    GLuint
+    AddElementBuffer(bool&               _success_out,
+                     const GLvoid* const _data_in,
+                     const GLsizeiptr&&  _data_size_bytes_in,
+                     const GLsizei&&     _target_buffer_element_count_in,
+                     const GLenum&&      _target_buffer_usage_type_in,
+                     const GLenum&&      _primitive_drawing_mode_in);
+
+    void
+    EnableElementBuffer(bool& _success_out);
+
+    void
+    EnableVertexAttribute(bool& _success_out, const GLuint&& _attribute_index_in);
+
+    void
+    Draw() const noexcept;
 
   protected:
-    glt::GLBufferStore             buffer_store;
-    std::vector<EnabledAttributes> enabled_attributes;
+    GLuint*            vertex_array_object = nullptr;
+    glt::GLBufferStore buffer_store;
+    ModelMatrixInfo    model_matrix_info;
+
+    ~BufferedModel();
 };
 
 struct TextureInfo
 {
     TextureInfo() = delete;
-    TextureInfo(const GLuint&& _texture_id,
-                const GLuint&& _texture_coordinates_vbo_id,
-                const GLenum&& _texture_target);
+    TextureInfo(const GLuint&& _texture_id_in,
+                const GLuint&& _texture_coordinates_vbo_id_in,
+                const GLuint&& _texture_coordinates_vertex_attribute_index_in,
+                const GLenum&& _texture_target_in,
+                const GLenum&& _texture_unit_in) noexcept;
 
     const GLuint texture_id;
     const GLuint texture_coordinates_vbo_id;
+    const GLuint texture_coordinates_vertex_attribute_index;
     const GLenum texture_target;
+    const GLenum texture_unit;
 };
 
 struct TexturedModel : BufferedModel
 {
     void
-    CreateTexture(bool&                                    _success,
-                  const char* const                        _file_path,
-                  GLuint&                                  _texture_id,
-                  const GLuint&&                           _vao,
-                  const GLvoid*                            _texcoord_data,
-                  const GLsizeiptr&&                       _texcoord_data_size,
-                  const GLsizei&&                          _texcoord_vertex_count,
-                  const GLenum&&                           _texcoord_usage,
-                  const GLenum&&                           _texcoord_drawing_mode,
-                  const GLenum&&                           _texture_traget,
-                  const std::vector<glt::VertexAttribute>& _texture_coordinate_vertex_attributes);
+    AddTexture(bool&             _success_out,
+               const char* const _file_path_in,
+               const GLuint&&    _vbo_id_in,
+               const GLuint&&    _texture_coordinates_vertex_attribute_index_in,
+               const GLenum&&    _texture_unit_in,
+               const GLenum&&    _texture_target_buffer_type_in,
+               GLuint&           _texture_id_out) noexcept;
 
     void
-    SetTextureUnit(const GLenum&& _texture_unit);
+    EnableTexture(bool& _success_out, const GLuint&& _texture_id_in);
 
     void
-    EnableVertexAttribute(bool&                     _success,
-                          const glt::GLBufferType&& _buffer_type,
-                          const GLuint&&            _attribute_id);
-
-    void const
-    GetTextureInfoByAttributeId(bool&          _success,
-                                const GLuint&& _attribute_id,
-                                TextureInfo*&  _texture_info);
-
-    void const
-    Draw();
+    Draw() const noexcept;
 
   protected:
-    GLenum                    texture_unit;
-    std::vector<TextureInfo>  textures;
-    std::vector<TextureInfo*> enabled_textures_by_attribute_index;
+    std::vector<TextureInfo> added_textures;
+    TextureInfo*             currently_enabled_texture;
 
   private:
     void
-    ResizeEnabledTexturesVector(const std::vector<glt::VertexAttribute>& _vertex_attributes);
-
-    void
-    ResizeEnabledTexturesVector(const GLuint&& _vertex_attribute_id);
+    GetTextureInfoByAttributeIndex(bool&          _success_out,
+                                   const GLuint&& _attribute_index_in,
+                                   TextureInfo*&  _texture_info_out) const;
 };
+
+// void
+// LoadModelFromObjFile(bool&             _success_out,
+//                      const char* const _obj_file_location);
+
+void
+LoadModelFromAsciiPlyFile(
+  bool&                                        _success_out,
+  const GLuint&&                               _vertex_array_object_id_in,
+  const char* const                            _ascii_ply_file_path_in,
+  const GLuint&&                               _position_attribute_index_in,
+  const GLuint&&                               _normal_attribute_index_in,
+  const GLuint&&                               _texture_coordinates_attribute_index_in,
+  size_t&                                      _vertex_count_out,
+  std::vector<float>&                          _buffer_data_out,
+  std::vector<GLuint>&                         _buffer_elements_array_out,
+  std::vector<glt::VertexDataType>&            _vertex_data_types_out,
+  std::vector<glt::VertexAttributeDescriptor>& _vertex_attribute_pointers_out);
 
 #endif

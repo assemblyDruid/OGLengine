@@ -1,41 +1,45 @@
-//
 // Todo
-//
 {
-    // Go through and __unbind__ things when done in functions, such as glBindTexture(0), glBindBuffer(0), glBind*, glEnable*
-}
 
-// Sphere
-{
-    constexpr float  ring_count            = 25.0f;
-    constexpr float  points_per_ring_count = 55.0f;
-    constexpr size_t sphere_index_count = static_cast<size_t>(ring_count * points_per_ring_count *
-                                                              3);
-
-    size_t          index   = 0;
-    float           theta   = 0.0f;
-    float           phi     = 0.0f;
-    constexpr float d_theta = PI / ring_count;                // Spacing between rings.
-    constexpr float d_phi   = 2 * PI / points_per_ring_count; // Spacing between points in a ring.
-
-    float sphere_vertex_positions[sphere_index_count] = {};
-    for (auto& ring_number = 0; ring_number < ring_count; ring_number++)
+    // TODO::Now
     {
-        theta += d_theta;
-        for (auto& point_number = 0; point_number < points_per_ring_count; point_number++)
-        {
-            phi += d_phi;
-            sphere_vertex_positions[index++] = static_cast<float>(sin(theta) * cos(phi)); // X
-            sphere_vertex_positions[index++] = static_cast<float>(sin(theta) * sin(phi)); // Y
-            sphere_vertex_positions[index++] = static_cast<float>(cos(theta));            // Z
-        }
+      // # Implement keyboard/mouse input handling
+      // # Get camera moving.
+      // # Clean up all shader files for each chapter.
+      // # Set option to have initial window query for screen size and start full-screen-windowed.
+      // # Timer is wrong.
+      // # On build failure, remove the binary from /bin/ so that we don't accidentally keep running an old version of the code if we don't notice build output.
+
+      // # Double check that you can't store textures in the store array by the texture ID rather than the vertex attribute id.
+
+      // According to DumpState, the viewport width and height are not being set in GLState::viewport. The same goes for the window state/aspect ratio on resize -- Viewport gets updated, but Window does not (within state cahce). Additionally, on startup (before resizing), the viewport state is not getting set. So window state is not getting set after a window-resize (but viewport is), and viewport is not getting set  _without_ a resize (but window is).
+
+      // Split the StateDump to a) just getting the state dump tring in one function and b) a function that calls (a) as well as prints it. If you do this, you can get the state dump string in LogType::ltError messages and dump state every time there's an error. You'd be able to do the same in the glError check within the function wrappers.
+
+      // Better debug messaging? https://www.khronos.org/opengl/wiki/Debug_Output
+      // Paint "Graceful exit" green in terminal output?
     }
 
-    sphere.ArrayBuffer(vao,
-                       sphere_vertex_positions,
-                       sizeof(sphere_vertex_positions),
-                       (sphere_index_count / 3),
-                       GL_STATIC_DRAW,
-                       GL_TRIANGLE_FAN);
-    sphere.FormatVertexAttribute(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    // TODO::Eventually
+    {
+      // # Implement binary portion of PLY loader.
+      // # Dont' query gl functions with glew, use a static fnptr member within each of the Impl_<> functions that can be referenced there: static fnptr glClear = GetTheFnPtr() ... then call it rather than the glew version
+    }
 }
+
+// Before Pushing To Dev/Master
+{
+    // # Every previous chapter must work with newly implemented or altered functions, insofar as they are used in previous chapters.
+    // # All [ cfarvin::<> ] tags must be addressed, removed, or moved to the "TODO" section above.
+}
+
+// Build All
+cd C :\workspace\vermont_dreams\src\chapter_2&& build.bat&& ^
+  cd C :\workspace\vermont_dreams\src\chapter_4&& build.bat&& ^
+  cd C :\workspace\vermont_dreams\src\chapter_5&& build.bat&& ^
+  cd                                              C
+  :\workspace\vermont_dreams\src\chapter_6&&      build.bat
+
+    // Run All
+    cd C :\workspace\vermont_dreams\bin&& ^
+  chapter_2.exe&& ^ chapter_4.exe&& ^ chapter_5.exe&& ^ chapter_6.exe

@@ -1,3 +1,7 @@
+// clang-format off
+#include "pch.h"
+// clang-format on
+
 #include "orientation.h"
 
 // All non-constructor functions must have 'void' return type.

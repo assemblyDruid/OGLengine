@@ -1,8 +1,9 @@
 #ifndef logging_h
 #define logging_h
 
-#include <sstream>
-#include <string>
+// clang-format off
+#include "pch.h"
+// clang-format on
 
 #define Log_e(msg) Log::Error(msg, std::move(__FILE__), std::move(__LINE__))
 #define Log_w(msg) Log::Warn(msg, std::move(__FILE__), std::move(__LINE__))
@@ -12,73 +13,83 @@ struct Log
 {
     enum class LogType
     {
-        INFO = 0,
-        WARNING,
-        ERROR,
+        ltINFO = 0,
+        ltWARNING,
+        ltERROR,
     };
 
     //
     // Error
     //
-    static const void
+    static void
     Error(const char* const&&  c_str,
           const char* const&&  _file = "",
-          const unsigned int&& _line = 0);
+          const unsigned int&& _line = 0) noexcept;
 
-    static const void
+    static void
     Error(const std::stringstream& ss,
           const char* const&&      _file = "",
-          const unsigned int&&     _line = 0);
+          const unsigned int&&     _line = 0) noexcept;
 
-    static const void
-    Error(const std::string& str, const char* const&& _file = "", const unsigned int&& _line = 0);
+    static void
+    Error(const std::string&   str,
+          const char* const&&  _file = "",
+          const unsigned int&& _line = 0) noexcept;
 
     //
     // Warn
     //
-    static const void
-    Warn(const char* const&& c_str, const char* const&& _file = "", const unsigned int&& _line = 0);
+    static void
+    Warn(const char* const&&  c_str,
+         const char* const&&  _file = "",
+         const unsigned int&& _line = 0) noexcept;
 
-    static const void
+    static void
     Warn(const std::stringstream& ss,
          const char* const&&      _file = "",
-         const unsigned int&&     _line = 0);
+         const unsigned int&&     _line = 0) noexcept;
 
-    static const void
-    Warn(const std::string& str, const char* const&& _file = "", const unsigned int&& _line = 0);
+    static void
+    Warn(const std::string&   str,
+         const char* const&&  _file = "",
+         const unsigned int&& _line = 0) noexcept;
 
     //
     // Info
     //
-    static const void
-    Info(const char* const&& c_str, const char* const&& _file = "", const unsigned int&& _line = 0);
+    static void
+    Info(const char* const&&  c_str,
+         const char* const&&  _file = "",
+         const unsigned int&& _line = 0) noexcept;
 
-    static const void
+    static void
     Info(const std::stringstream& ss,
          const char* const&&      _file = "",
-         const unsigned int&&     _line = 0);
+         const unsigned int&&     _line = 0) noexcept;
 
-    static const void
-    Info(const std::string& str, const char* const&& _file = "", const unsigned int&& _line = 0);
+    static void
+    Info(const std::string&   str,
+         const char* const&&  _file = "",
+         const unsigned int&& _line = 0) noexcept;
 
   private:
-    static const void
+    static inline void
     _Log(const LogType&&      lt,
          const char* const&&  c_str,
          const char* const&&  _file = "",
-         const unsigned int&& _line = 0);
+         const unsigned int&& _line = 0) noexcept;
 
-    static const void
+    static inline void
     _Log(const LogType&&          lt,
          const std::stringstream& ss,
          const char* const&&      _file = "",
-         const unsigned int&&     _line = 0);
+         const unsigned int&&     _line = 0) noexcept;
 
-    static const void
+    static inline void
     _Log(const LogType&&      lt,
          const std::string&   str,
          const char* const&&  _file = "",
-         const unsigned int&& _line = 0);
+         const unsigned int&& _line = 0) noexcept;
 };
 
 #endif

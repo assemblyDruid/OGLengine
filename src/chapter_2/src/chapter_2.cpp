@@ -19,16 +19,18 @@ float  t  = 0.0f;
 float  dt = 0.01f;
 
 void
-Init(GLFWwindow* window)
+Init(bool& _success_out)
 {
-    // [ cfarvin::TODO ] We are not using the window argument from the chapter yet.
-    if (window)
-    {
-    }
+    glt::CreateShaderProgram(_success_out,
+                             "./../src/chapter_2/src/shaders/vertex_shader.glsl",
+                             "./../src/chapter_2/src/shaders/fragment_shader.glsl",
+                             rendering_program);
 
-    rendering_program = glt::CreateShaderProgram(
-      "./../src/chapter_2/src/shaders/vertex_shader.glsl",
-      "./../src/chapter_2/src/shaders/fragment_shader.glsl");
+    if ((0 == rendering_program) || (false == _success_out))
+    {
+        Log_e("Unable to create rendering program.");
+        return;
+    }
 
     // Note: OGL requires at least one VAO when shaders are being used.
     glGenVertexArrays(NUM_VAO, vao);
@@ -62,6 +64,7 @@ Display(GLFWwindow* window, double current_time)
 int
 main()
 {
+    bool success = true;
     if (!glfwInit())
     {
         Log_e("Unable to initialize GLFW.");
@@ -85,7 +88,12 @@ main()
     // Note: Glfw windows are double-buffered by default.
     glfwSwapInterval(1);
 
-    Init(window);
+    Init(success);
+    if (false == success)
+    {
+        Log_e("Unable to initialize.");
+        std::exit(EXIT_FAILURE);
+    }
 
     while (!glfwWindowShouldClose(window))
     {

@@ -15,7 +15,7 @@
 ::
 ::------------------------------
 @SET SCRIPT_DIR=%cd%
-@SET APP_NAME=chapter_4
+@SET APP_NAME=chapter_6
 @SET APP_ARCH=x64
 :: @SET SHADER_DIR=%SCRIPT_DIR%\shaders
 :: @SET SHADER_SRC_DIR=%SHADER_DIR%\source
@@ -31,13 +31,16 @@
 ::
 ::------------------------------
 echo Formatting files...
-clang-format.exe -i .\src\*.c         >nul 2>nul
-clang-format.exe -i .\src\*.cpp       >nul 2>nul
-clang-format.exe -i .\src\*.h         >nul 2>nul
-clang-format.exe -i .\src\*.hpp       >nul 2>nul
-clang-format.exe -i .\..\common\*.h   >nul 2>nul
-clang-format.exe -i .\..\common\*.hpp >nul 2>nul
-clang-format.exe -i .\..\common\*.cpp >nul 2>nul
+clang-format.exe -i .\src\*.c                  >nul 2>nul
+clang-format.exe -i .\src\*.cpp                >nul 2>nul
+clang-format.exe -i .\src\*.h                  >nul 2>nul
+clang-format.exe -i .\src\*.hpp                >nul 2>nul
+clang-format.exe -i .\..\common\*.h            >nul 2>nul
+clang-format.exe -i .\..\common\*.hpp          >nul 2>nul
+clang-format.exe -i .\..\common\*.cpp          >nul 2>nul
+clang-format.exe -i .\..\common\platform\*.h   >nul 2>nul
+clang-format.exe -i .\..\common\platform\*.hpp >nul 2>nul
+clang-format.exe -i .\..\common\platform\*.cpp >nul 2>nul
 echo.
 
 
@@ -71,7 +74,7 @@ IF %ERRORLEVEL% NEQ 0 GOTO :VS_NOT_FOUND
 mkdir msvc_landfill >nul 2>nul
 pushd msvc_landfill >nul
 
-
+::
 :: Compile & Link Options
 ::------------------------------
 :: /TC                  Compile as C code.
@@ -85,6 +88,7 @@ pushd msvc_landfill >nul
 :: /GS	                Detect buffer overruns.
 :: /MD*                 Multi-thread specific, DLL-specific runtime lib. (See /MDd, /MT, /MTd, /LD, /LDd).
 :: /GL	                Whole program optimization.
+:: /GA                  Optimizes for Windows applications.
 :: /EHsc                No exception handling (Unwind semantics requrie vstudio env). (See /W1).
 :: /I<arg>              Specify include directory.
 :: /link                Invoke microsoft linker options.
@@ -94,10 +98,10 @@ pushd msvc_landfill >nul
 :: /LIBPATH:<arg>       Specify library directory/directories.
 
 :: General Parameters
-@SET GeneralParameters=/Oi /Qpar /EHsc /GL /nologo /Ot /std:c++latest /DGLEW_STATIC
+@SET GeneralParameters=/W4 /WX /GA /Oi /Qpar /EHsc /GL /nologo /Ot /TP /std:c++latest
 
 :: Debug Paramters
-@SET DebugParameters=/Od /W4 /WX /Z7 /MTd
+@SET DebugParameters=/Od /W4 /WX /Z7 /MTd /D_ENGINE_DEBUG_
 
 :: Release Parameters
 @SET ReleaseParameters=/O2 /W4 /WX /Ob2 /MT
@@ -107,11 +111,13 @@ pushd msvc_landfill >nul
 /I%SCRIPT_DIR%\.. ^
 /I%SCRIPT_DIR%\..\.. ^
 /I%SCRIPT_DIR%\..\..\include ^
+/I%SCRIPT_DIR%\..\..\include\KHR ^
 /I%SCRIPT_DIR%\..\..\include\GL ^
 /I%SCRIPT_DIR%\..\..\include\GLFW ^
 /I%SCRIPT_DIR%\..\..\include\glm ^
-/I%SCRIPT_DIR%\..\..\include\SOIL2 ^
-/I%SCRIPT_DIR%\..\..\src\common
+/I%SCRIPT_DIR%\..\..\include\stb ^
+/I%SCRIPT_DIR%\..\..\src\common ^
+/I%SCRIPT_DIR%\..\..\src\common\platform
 
 ::
 :: General Link Parameters
@@ -129,18 +135,18 @@ odbccp32.lib
 ::
 :: Debug Link Parameters
 ::----------------------
-@SET DebugLinkParameters=glfw3dll.lib
+@SET DebugLinkParameters=pch_d.obj
 
 ::
 :: Release Link Parameters
 ::------------------------
-@SET ReleaseLinkParameters=glfw3_mt.lib
+@SET ReleaseLinkParameters=pch.obj
 
 ::
 :: Source Files
 ::-------------
 @SET SourceFiles=%SCRIPT_DIR%\src\%APP_NAME%.cpp ^
-%SCRIPT_DIR%\..\..\include\GL\glew.c ^
+%SCRIPT_DIR%\..\..\include\stb\stb_image.c ^
 %SCRIPT_DIR%\..\..\src\common\logging.cpp ^
 %SCRIPT_DIR%\..\..\src\common\gl_tools.cpp ^
 %SCRIPT_DIR%\..\..\src\common\app_window.cpp ^
@@ -150,17 +156,22 @@ odbccp32.lib
 %SCRIPT_DIR%\..\..\src\common\orientation.cpp ^
 %SCRIPT_DIR%\..\..\src\common\position.cpp ^
 %SCRIPT_DIR%\..\..\src\common\image_tools.cpp ^
-%SCRIPT_DIR%\..\..\src\common\fileio.cpp
+%SCRIPT_DIR%\..\..\src\common\fileio.cpp ^
+%SCRIPT_DIR%\..\..\src\common\state_tools.cpp ^
+%SCRIPT_DIR%\..\..\src\common\timer.cpp ^
+%SCRIPT_DIR%\..\..\src\common\platform\windows_platform.cpp
 
-:: STB Image
-@SET SourceFiles=%SourceFiles% ^
-%SCRIPT_DIR%\..\..\include\stb\stb_image.cpp
+::
+:: Precompiled Headers
+::--------------------
+@SET PrecompiledHeadersDebug=/Yupch.h /Fppch_d.pch
+@SET PrecompiledHeadersRelease=/Yupch.h /Fppch.pch
 
 ::
 :: Compiler Invocation
 ::--------------------
 @SET "INVOKE_RELEASE=cl %GeneralParameters% %ReleaseParameters% %SourceFiles% %IncludeParameters% /link %GeneralLinkParameters% %ReleaseLinkParameters%"
-@SET "INVOKE_DEBUG=cl %GeneralParameters% %DebugParameters% %SourceFiles% %IncludeParameters% /link %GeneralLinkParameters% %DebugLinkParameters%"
+@SET "INVOKE_DEBUG=cl %GeneralParameters% %DebugParameters% %PrecompiledHeadersDebug% %SourceFiles% %IncludeParameters% /link %GeneralLinkParameters% %DebugLinkParameters%"
 
 IF /I "%RELEASE_BUILD%" EQU "1" ( echo Building [ release ]... ) else ( echo Building [ debug ]... )
 IF /I "%RELEASE_BUILD%" EQU "1" (%INVOKE_RELEASE%) else (%INVOKE_DEBUG%)

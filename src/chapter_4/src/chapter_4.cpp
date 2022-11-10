@@ -13,7 +13,7 @@
 #include "camera.h"
 #include "logging.h"
 #include "model.h"
-#include "windowing.h"
+#include "app_window.h"
 
 #include <chrono>
 #include <iostream>
@@ -25,7 +25,7 @@
 GLuint                rendering_program;
 GLuint                vao;
 std::stack<glm::mat4> matrix_stack = {};
-Window*               window;
+AppWindow*               window;
 Camera                camera;
 BufferedModel         cube;
 BufferedModel         sun_pyramid;
@@ -38,9 +38,9 @@ GLuint                mv_location;
 GLuint                p_location;
 
 void
-SetupModels(bool& _success)
+SetupModels(bool& _success_out)
 {
-    _success = false;
+    _success_out = false;
     glGenVertexArrays(1, &vao);
 
     // Cube
@@ -57,31 +57,32 @@ SetupModels(bool& _success)
             +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, +1.0f, -1.0f, +1.0f, +1.0f, -1.0f, +1.0f, -1.0f
         };
 
-        GLuint                            position_attribute_id = 0;
-        std::vector<glt::VertexAttribute> position_attributes;
+        GLuint                                       position_attribute_id = 0;
+        std::vector<glt::VertexAttributeDescriptor> position_attributes;
         position_attributes.push_back({ 0, 3, GL_FLOAT, GL_FALSE, 0, 0 });
 
-        cube.AddBuffer(_success,
+        cube.AddBuffer(_success_out,
                        std::move(vao),
                        (GLvoid*)cube_vertex_positions,
                        sizeof(cube_vertex_positions),
+                       GL_ARRAY_BUFFER,
                        (sizeof(cube_vertex_positions) / 3),
                        GL_STATIC_DRAW,
                        GL_TRIANGLES,
-                       glt::GLBufferType::POSITION_COORDINATES,
+                       glt::VertexDataType::POSITION,
                        position_attributes);
 
-        if (false == _success)
+        if (false == _success_out)
         {
             Log_e("Unable to create cube buffer");
             return;
         }
 
-        cube.EnableVertexAttribute(_success,
-                                   glt::GLBufferType::POSITION_COORDINATES,
+        cube.EnableVertexAttribute(_success_out,
+                                   glt::VertexDataType::POSITION,
                                    std::move(position_attribute_id));
 
-        if (false == _success)
+        if (false == _success_out)
         {
             Log_e("Unable to enable cube position vertex attribute.");
             return;
@@ -102,31 +103,32 @@ SetupModels(bool& _success)
         };
         // clang-format on
 
-        GLuint                            position_attribute_id = 0;
-        std::vector<glt::VertexAttribute> position_attributes;
+        GLuint                                       position_attribute_id = 0;
+        std::vector<glt::VertexAttributeDescriptor> position_attributes;
         position_attributes.push_back({ 0, 3, GL_FLOAT, GL_FALSE, 0, 0 });
 
-        sun_pyramid.AddBuffer(_success,
+        sun_pyramid.AddBuffer(_success_out,
                               std::move(vao),
                               (GLvoid*)pyramid_vertex_positions,
                               sizeof(pyramid_vertex_positions),
+                              GL_ARRAY_BUFFER,
                               (sizeof(pyramid_vertex_positions) / 3),
                               GL_STATIC_DRAW,
                               GL_TRIANGLES,
-                              glt::GLBufferType::POSITION_COORDINATES,
+                              glt::VertexDataType::POSITION,
                               position_attributes);
 
-        if (false == _success)
+        if (false == _success_out)
         {
             Log_e("Unable to create pyramid buffer");
             return;
         }
 
-        sun_pyramid.EnableVertexAttribute(_success,
-                                          glt::GLBufferType::POSITION_COORDINATES,
+        sun_pyramid.EnableVertexAttribute(_success_out,
+                                          glt::VertexDataType::POSITION,
                                           std::move(position_attribute_id));
 
-        if (false == _success)
+        if (false == _success_out)
         {
             Log_e("Unable to enable pyramid position vertex attribute.");
             return;
@@ -159,31 +161,32 @@ SetupModels(bool& _success)
             }
         }
 
-        GLuint                            position_attribute_id = 0;
-        std::vector<glt::VertexAttribute> position_attributes;
+        GLuint                                       position_attribute_id = 0;
+        std::vector<glt::VertexAttributeDescriptor> position_attributes;
         position_attributes.push_back({ 0, 3, GL_FLOAT, GL_FALSE, 0, 0 });
 
-        sphere.AddBuffer(_success,
+        sphere.AddBuffer(_success_out,
                          std::move(vao),
                          (GLvoid*)sphere_vertex_positions,
                          sizeof(sphere_vertex_positions),
+                         GL_ARRAY_BUFFER,
                          (sizeof(sphere_vertex_positions) / 3),
                          GL_STATIC_DRAW,
                          GL_TRIANGLE_FAN,
-                         glt::GLBufferType::POSITION_COORDINATES,
+                         glt::VertexDataType::POSITION,
                          position_attributes);
 
-        if (false == _success)
+        if (false == _success_out)
         {
             Log_e("Unable to create pyramid buffer");
             return;
         }
 
-        sphere.EnableVertexAttribute(_success,
-                                     glt::GLBufferType::POSITION_COORDINATES,
+        sphere.EnableVertexAttribute(_success_out,
+                                     glt::VertexDataType::POSITION,
                                      std::move(position_attribute_id));
 
-        if (false == _success)
+        if (false == _success_out)
         {
             Log_e("Unable to enable pyramid position vertex attribute.");
             return;
@@ -199,9 +202,9 @@ struct DisplayVars
 DisplayVars dv;
 
 void
-Display(bool& _success)
+Display(bool& _success_out)
 {
-    _success = false;
+    _success_out = false;
 
     const float current_time = static_cast<float>(glfwGetTime());
     dv.v3                    = glm::vec3(8 * sin(current_time), 0, 8 * cos(current_time));
@@ -361,8 +364,8 @@ Display(bool& _success)
         matrix_stack.pop();
     }
 
-    glt::QueryGLErrors(_success);
-    if (false == _success)
+    glt::QueryGLErrors(_success_out);
+    if (false == _success_out)
     {
         Log_e("OpenGL error in reder loop.");
     }
@@ -394,9 +397,9 @@ OnWindowResize(GLFWwindow* glfw_window, int new_width, int new_height)
 }
 
 void
-Initialize(bool& _success)
+Initialize(bool& _success_out)
 {
-    _success = false;
+    _success_out = false;
 
     constexpr int          gl_major_version = 4;
     constexpr int          gl_minor_version = 5;
@@ -407,11 +410,11 @@ Initialize(bool& _success)
     {
         bool glew_glfw_window_success = true;
 
-        window = new Window(gl_major_version,          // GL Major Version
+        window = new AppWindow(gl_major_version,          // GL Major Version
                             gl_minor_version,          // GL Minor Version
-                            width,                     // Window Width
-                            height,                    // Window Height
-                            "Chapter 4",               // Window Title
+                            width,                     // AppWindow Width
+                            height,                    // AppWindow Height
+                            "Chapter 4",               // AppWindow Title
                             glew_glfw_window_success); // Error checking
 
         if (false == glew_glfw_window_success)
@@ -423,12 +426,16 @@ Initialize(bool& _success)
 
     // Create the shader program.
     {
-        rendering_program = glt::CreateShaderProgram(
-          "./../src/chapter_4/src/shaders/vertex_shader.glsl",
-          "./../src/chapter_4/src/shaders/fragment_shader.glsl");
-        if (0 == rendering_program)
+        glt::CreateShaderProgram(_success_out,
+                                 "./../src/chapter_4/src/shaders/vertex_shader.glsl",
+                                 "./../src/chapter_4/src/shaders/fragment_shader.glsl",
+                                 rendering_program);
+        if ((0 == rendering_program) || (_success_out == false))
         {
             Log_e("Unable to create a shader program.");
+            glfwDestroyWindow(window->glfw_window);
+            glfwTerminate();
+            _success_out = false;
             return;
         }
     }
@@ -444,7 +451,6 @@ Initialize(bool& _success)
         glt::SetUniformValueMat4(std::move(p_location), glm::value_ptr(p_mat));
     }
 
-    // [ cfarvin::TODO ] These need to be moved.
     // Set initial camera & model positions.
     {
         camera.SetPosition(0.0f, 0.0f, 20.0f);
@@ -453,14 +459,14 @@ Initialize(bool& _success)
         sun_pyramid.SetPosition(0.0f, 0.0f, 0.0f);
         sphere.SetPosition(0.0f, 0.0f, 0.0f);
 
-        SetupModels(_success);
-        if (false == _success)
+        SetupModels(_success_out);
+        if (false == _success_out)
         {
             Log_e("Unable to setup models.");
         }
     }
 
-    _success = true;
+    _success_out = true;
 }
 
 int

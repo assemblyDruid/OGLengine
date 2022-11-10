@@ -1,3 +1,7 @@
+// clang-format off
+#include "pch.h"
+// clang-format on
+
 #include "object3.h"
 
 void

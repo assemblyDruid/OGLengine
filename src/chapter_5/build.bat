@@ -5,7 +5,7 @@
 :: Relase / Debug
 ::
 ::------------------------------
-SET /A RELEASE_BUILD=0
+@SET /A RELEASE_BUILD=0
 
 
 ::------------------------------
@@ -80,7 +80,7 @@ pushd msvc_landfill >nul
 :: /Od 	                Disables optimization.
 :: /Qpar                Enable parallel code generation.
 :: /Ot                  Favor fast code (over small code).
-:: /Ob2                 Enable full inline expansion. [ cfarvin::NOTE ] Debugging impact.
+:: /Ob2                 Enable full inline expansion. Note: Debugging impact.
 :: /Z7	                Full symbolic debug info. No pdb. (See /Zi, /Zl).
 :: /GS	                Detect buffer overruns.
 :: /MD*                 Multi-thread specific, DLL-specific runtime lib. (See /MDd, /MT, /MTd, /LD, /LDd).
@@ -94,16 +94,16 @@ pushd msvc_landfill >nul
 :: /LIBPATH:<arg>       Specify library directory/directories.
 
 :: General Parameters
-SET GeneralParameters=/Oi /Qpar /EHsc /GL /nologo /Ot /std:c++latest /DGLEW_STATIC
+@SET GeneralParameters=/Oi /Qpar /EHsc /GL /nologo /Ot /std:c++latest /DGLEW_STATIC
 
 :: Debug Paramters
-SET DebugParameters=/Od /W4 /WX /Z7 /MTd
+@SET DebugParameters=/Od /W4 /WX /Z7 /MTd
 
 :: Release Parameters
-SET ReleaseParameters=/O2 /W4 /WX /Ob2 /MT
+@SET ReleaseParameters=/O2 /W4 /WX /Ob2 /MT
 
 :: Include Parameters
-SET IncludeParameters=/I%cd%\.. ^
+@SET IncludeParameters=/I%cd%\.. ^
 /I%SCRIPT_DIR%\.. ^
 /I%SCRIPT_DIR%\..\.. ^
 /I%SCRIPT_DIR%\..\..\include ^
@@ -116,7 +116,7 @@ SET IncludeParameters=/I%cd%\.. ^
 ::
 :: General Link Parameters
 ::----------------
-SET GeneralLinkParameters=/SUBSYSTEM:CONSOLE ^
+@SET GeneralLinkParameters=/SUBSYSTEM:CONSOLE ^
 /LIBPATH:%SCRIPT_DIR%\..\..\lib ^
 /NXCOMPAT ^
 /MACHINE:x64 ^
@@ -129,30 +129,31 @@ odbccp32.lib
 ::
 :: Debug Link Parameters
 ::----------------------
-SET DebugLinkParameters=glfw3dll.lib
+@SET DebugLinkParameters=glfw3dll.lib
 
 ::
 :: Release Link Parameters
 ::------------------------
-SET ReleaseLinkParameters=glfw3_mt.lib
+@SET ReleaseLinkParameters=glfw3_mt.lib
 
 ::
 :: Source Files
 ::-------------
-SET SourceFiles=%SCRIPT_DIR%\src\%APP_NAME%.cpp ^
+@SET SourceFiles=%SCRIPT_DIR%\src\%APP_NAME%.cpp ^
 %SCRIPT_DIR%\..\..\include\GL\glew.c ^
 %SCRIPT_DIR%\..\..\src\common\logging.cpp ^
 %SCRIPT_DIR%\..\..\src\common\gl_tools.cpp ^
-%SCRIPT_DIR%\..\..\src\common\windowing.cpp ^
+%SCRIPT_DIR%\..\..\src\common\app_window.cpp ^
 %SCRIPT_DIR%\..\..\src\common\camera.cpp ^
 %SCRIPT_DIR%\..\..\src\common\model.cpp ^
 %SCRIPT_DIR%\..\..\src\common\object3.cpp ^
 %SCRIPT_DIR%\..\..\src\common\orientation.cpp ^
 %SCRIPT_DIR%\..\..\src\common\position.cpp ^
-%SCRIPT_DIR%\..\..\src\common\image_tools.cpp
+%SCRIPT_DIR%\..\..\src\common\image_tools.cpp ^
+%SCRIPT_DIR%\..\..\src\common\fileio.cpp
 
 :: STB Image
-SET SourceFiles=%SourceFiles% ^
+@SET SourceFiles=%SourceFiles% ^
 %SCRIPT_DIR%\..\..\include\stb\stb_image.cpp
 
 ::
@@ -169,22 +170,12 @@ xcopy /y %APP_NAME%.exe ..\..\..\bin >nul
 popd >nul
 echo Done.
 echo.
-
-::------------------------------
-::
-:: Tag Analysis
-::
-::------------------------------
-echo Performing tag analysis...
-python %SCRIPT_DIR%\..\..\bin\TagAnalysis.py --emacs
-echo Done.
-echo.
 GOTO :exit
 
 :VS_NOT_FOUND
 echo.
 echo Unable to find vcvarsall.bat. Did you install Visual Studio to the default location?
-echo This build script requries Visual Studio 2019; with the standard C/C++ toolset.
+echo This build script requries Visual Studio 2022; with the standard C/C++ toolset.
 echo.
 GOTO :exit
 

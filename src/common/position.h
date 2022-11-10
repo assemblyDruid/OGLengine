@@ -6,7 +6,7 @@
 
 struct Position3
 {
-    Position3();
+    const Position3() noexcept;
 
     float x;
     float y;

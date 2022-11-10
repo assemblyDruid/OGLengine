@@ -1,0 +1,10 @@
+graphics_state api                          OPENGL
+graphics_state field_of_view_radians        1.0472
+graphics_state near_clipping_plane_distance 0.1
+graphics_state far_clipping_plane_distance  1000.0
+
+opengl_state major_version 4
+opengl_state minor_version 6
+
+window_state window_height 600
+window_state window_width  600

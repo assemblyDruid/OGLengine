@@ -1,0 +1,19 @@
+ply
+format ascii 1.0
+comment Created by Blender 3.3.1 - www.blender.org
+element vertex 3
+property float x
+property float y
+property float z
+property float nx
+property float ny
+property float nz
+property float s
+property float t
+element face 1
+property list uchar uint vertex_indices
+end_header
+-0.5 -0.5 0.0    -0.577350 +0.577350 +0.577350    0.0 0.0
++0.5 -0.5 0.0    -0.577350 -0.577350 -0.577350    1.0 0.0
++0.0 +0.5 0.0    -0.577350 -0.577350 +0.577350    0.5 0.5
+3 0 1 2

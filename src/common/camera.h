@@ -1,22 +1,25 @@
 #ifndef camera_h
 #define camera_h
 
-#include "glm/glm.hpp"
+// clang-format off
+#include "pch.h"
+// clang-format on
+
 #include "object3.h"
 
 struct Camera : protected Object3
 {
-    Camera();
+    Camera() noexcept;
 
     void
-    LookAt(const glm::vec3& _target_position, glm::mat4& _view_matrix);
+    LookAt(const glm::vec3& _target_position, glm::mat4& _view_matrix) noexcept;
 
     void
-    SetPosition(const float&& _x, const float&& _y, const float&& _z);
+    SetPosition(const float&& _x, const float&& _y, const float&& _z) noexcept;
 
   private:
     void
-    UpdateTranslationMatrix();
+    UpdateTranslationMatrix() noexcept;
 
     glm::mat4       ijk_orientation;
     glm::mat4       xyz_translation;
