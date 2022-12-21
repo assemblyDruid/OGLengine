@@ -2,6 +2,8 @@
 #include "pch.h"
 // clang-format on
 
+// [ cfarvin::NOTE::REMOVE ] RenderDoc reports no errors on NV
+
 #include "app_window.h"
 #include "camera.h"
 #include "gl_function_wrappers.h"
@@ -19,7 +21,7 @@
 //                   Possibly consumed by model importer along with which
 //                   shaders to use?
 //GLuint rendering_program;
-//GLuint mv_location;
+GLuint mv_location;
 GLuint p_location;
 
 std::stack<glm::mat4> matrix_stack = {};
@@ -103,9 +105,9 @@ DisplayLoop(bool& _success_out)
         // Copy matrices to corresponding uniform values (no view yet).
         // test_model.ModifyModelMatrix(matrix_stack.top());
         glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
-                           1,
-                           false,
-                           glm::value_ptr(matrix_stack.top()));
+                               1,
+                               false,
+                               glm::value_ptr(matrix_stack.top()));
 
         // Draw
         test_model.Draw();
