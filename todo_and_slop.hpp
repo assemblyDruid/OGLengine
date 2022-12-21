@@ -34,12 +34,11 @@
 }
 
 // Build All
-cd C :\workspace\vermont_dreams\src\chapter_2&& build.bat&& ^
-  cd C :\workspace\vermont_dreams\src\chapter_4&& build.bat&& ^
-  cd C :\workspace\vermont_dreams\src\chapter_5&& build.bat&& ^
-  cd                                              C
-  :\workspace\vermont_dreams\src\chapter_6&&      build.bat
+cd C:\workspace\vd\src\chapter_2&& build.bat&& ^
+cd C:\workspace\vd\src\chapter_4&& build.bat&& ^
+cd C:\workspace\vd\src\chapter_5&& build.bat&& ^
+cd C:\workspace\vd\src\chapter_6&& build.bat
 
-    // Run All
-    cd C :\workspace\vermont_dreams\bin&& ^
-  chapter_2.exe&& ^ chapter_4.exe&& ^ chapter_5.exe&& ^ chapter_6.exe
+// Run All
+cd C :\workspace\vermont_dreams\bin&& ^
+chapter_2.exe&& ^ chapter_4.exe&& ^ chapter_5.exe&& ^ chapter_6.exe

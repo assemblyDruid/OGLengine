@@ -204,6 +204,10 @@ BufferedModel::ModifyModelMatrix(const glm::mat4& _matrix_modifier_in)
                            1,
                            false,
                            glm::value_ptr(_matrix_modifier_in));
+
+    // [ cfarvin::TODO ]
+    // Should we go through all of these functions an do things like:
+    // glfn::UseProgram(0); ??
 }
 
 void
@@ -212,6 +216,9 @@ BufferedModel::Draw() const noexcept
     assert(nullptr != buffer_store.array_buffer);
     assert(nullptr != buffer_store.element_buffer);
     assert(nullptr != vertex_array_object);
+
+    // [ cfarvin::TODO ]
+    // Right now we're not binding a gl program. Das good?
 
     // Note: Avoiding scoped binding helper objects in draw loop.
     glfn::BindVertexArray(*vertex_array_object);

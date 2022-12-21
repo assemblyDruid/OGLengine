@@ -51,10 +51,14 @@ DisplayLoop(bool& _success_out)
     // [ cfarvin::REVISIT ]
     // const float current_time = timer.ElapsedMs();
 
+    const float scaled_time = static_cast<float>(timer.ElapsedMs()) / 225.0f;
+
     //
     // Model Independent
     //
     {
+        glfn::ClearColor(0.105f, cos(scaled_time), sin(scaled_time), 1.0f);
+
         // [ cfarvin::TODO ] These can go into state_cache, be read from SUS files,
         //                   and be changed only when necessary out of the draw loop.
         glfn::Clear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -95,7 +99,7 @@ DisplayLoop(bool& _success_out)
 
         matrix_stack.push(matrix_stack.top()); // Rotation slot
         matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-                                          static_cast<float>(timer.ElapsedMs()) / 225.0f,
+                                          scaled_time,
                                           glm::vec3(0.0f, 1.0f, 0.0f)); // Rotation matrix
 
         matrix_stack.push(matrix_stack.top()); // Scale slot
@@ -124,16 +128,19 @@ DisplayLoop(bool& _success_out)
 
     _success_out = true;
 
-    timer.StopTimer();
-    timer.TimerElapsedMs(display_loop_miliseconds);
-    static unsigned int report_fps = 0;
-    if (5000 == report_fps)
-    {
-        const float FPS = 1.0f / (display_loop_miliseconds / 1000.0f);
-        Log_i("[ fps ] " + std::to_string(FPS));
-        report_fps = 0;
-    }
-    report_fps++;
+    // [ cfarvin::REVISIT ]
+    // timer.StopTimer();
+    // timer.TimerElapsedMs(display_loop_miliseconds);
+    // static unsigned int report_fps = 0;
+    // if (5000 == report_fps)
+    // {
+    //     const float FPS = 1.0f / (display_loop_miliseconds / 1000.0f);
+    //     Log_i("[ fps ] " + std::to_string(FPS));
+    //     report_fps = 0;
+    // }
+    // report_fps++;
+
+    return;
 }
 
 void
@@ -287,8 +294,6 @@ Initialize(bool& _success_out)
         glfn::Enable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glfn::DebugMessageCallback((glt::GLDebugCallback), (void*)0);
 #endif
-
-        glfn::ClearColor(0.105f, 0.125f, 0.1505f, 1.0f);
     }
 
     // Create the shader program.
