@@ -62,6 +62,9 @@ struct BufferedModel : Model
     EnableVertexAttribute(bool& _success_out, const GLuint&& _attribute_index_in);
 
     void
+    ModifyModelMatrix(const glm::mat4& _matrix_modifier_in);
+
+    void
     Draw() const noexcept;
 
   protected:

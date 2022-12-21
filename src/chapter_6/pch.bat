@@ -53,7 +53,6 @@ pushd msvc_landfill >nul
 /I%SCRIPT_DIR%\..\.. ^
 /I%SCRIPT_DIR%\..\..\include ^
 /I%SCRIPT_DIR%\..\..\include\GL ^
-/I%SCRIPT_DIR%\..\..\include\GLFW ^
 /I%SCRIPT_DIR%\..\..\include\glm ^
 /I%SCRIPT_DIR%\..\..\include\stb ^
 /I%SCRIPT_DIR%\..\..\src\common ^

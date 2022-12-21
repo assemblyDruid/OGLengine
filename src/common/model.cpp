@@ -193,6 +193,20 @@ BufferedModel::EnableVertexAttribute(bool& _success_out, const GLuint&& _attribu
 }
 
 void
+BufferedModel::ModifyModelMatrix(const glm::mat4& _matrix_modifier_in)
+{
+    // [ cfarvin::TODO ] You are not confident in this.
+    static const state::StateCache* const state_cache = state::StateCache::GetInstance();
+    assert(nullptr != state_cache->opengl_state);
+    glfn::UseProgram(state_cache->opengl_state->program_id);
+
+    glfn::UniformMatrix4fv(model_matrix_info.model_matrix_layout_location,
+                           1,
+                           false,
+                           glm::value_ptr(_matrix_modifier_in));
+}
+
+void
 BufferedModel::Draw() const noexcept
 {
     assert(nullptr != buffer_store.array_buffer);
@@ -301,6 +315,11 @@ TexturedModel::Draw() const noexcept
 
     // Note: Avoiding scoped binding helper objects in draw loop.
     glfn::BindVertexArray(*vertex_array_object);
+
+    static const state::StateCache* const state_cache = state::StateCache::GetInstance();
+    assert(nullptr != state_cache->opengl_state);
+    glfn::UseProgram(state_cache->opengl_state->program_id);
+
     if (nullptr != currently_enabled_texture)
     {
         glfn::ActiveTexture(currently_enabled_texture->texture_unit);

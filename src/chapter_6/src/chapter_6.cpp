@@ -64,6 +64,7 @@ DisplayLoop(bool& _success_out)
 
         // [ cfarvin::TODO ] Uniform Buffer Object for projection
         // Projection Matrix
+        glfn::UseProgram(state_cache->opengl_state->program_id); // [ cfarvin::TESTING::REMOVE ]
         p_location = glfn::GetUniformLocation(state_cache->opengl_state->program_id, "proj_matrix");
         glfn::UniformMatrix4fv(p_location,
                                1,
@@ -100,8 +101,11 @@ DisplayLoop(bool& _success_out)
                                          glm::vec3(4.25f, 4.25f, 4.25f)); // Scale matrix
 
         // Copy matrices to corresponding uniform values (no view yet).
-        test_model.
-        glfn::UniformMatrix4fv(mv_location, 1, false, glm::value_ptr(matrix_stack.top()));
+        // test_model.ModifyModelMatrix(matrix_stack.top());
+        glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
+                           1,
+                           false,
+                           glm::value_ptr(matrix_stack.top()));
 
         // Draw
         test_model.Draw();
@@ -331,6 +335,8 @@ main()
     {
         app_window::SwapBuffers();
         app_window::ProcessPlatformEvents();
+
+        if (false == state_cache->is_running || false == success) break;
         DisplayLoop(success);
     }
 
