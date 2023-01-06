@@ -113,7 +113,6 @@ pushd msvc_landfill >nul
 /I%SCRIPT_DIR%\..\..\include ^
 /I%SCRIPT_DIR%\..\..\include\KHR ^
 /I%SCRIPT_DIR%\..\..\include\GL ^
-/I%SCRIPT_DIR%\..\..\include\GLFW ^
 /I%SCRIPT_DIR%\..\..\include\glm ^
 /I%SCRIPT_DIR%\..\..\include\stb ^
 /I%SCRIPT_DIR%\..\..\src\common ^
@@ -132,15 +131,24 @@ gdi32.lib ^
 shell32.lib ^
 odbccp32.lib
 
+:: [ cfarvin::REMOVE ] Delete glfw3dll.lib from debug link params.
+::                     At that point you can also delete the reference to the "lib"
+::                     folder when searching for libraries, since that's the only one.
+::
+:: glfw3dll.lib
+
 ::
 :: Debug Link Parameters
 ::----------------------
-@SET DebugLinkParameters=pch_d.obj
+@SET DebugLinkParameters=pch_d.obj 
 
 ::
 :: Release Link Parameters
 ::------------------------
 @SET ReleaseLinkParameters=pch.obj
+
+:: [ cfarvin::REMOVE ] glew.c from source files
+:: %SCRIPT_DIR%\..\..\include\GL\glew.c ^
 
 ::
 :: Source Files

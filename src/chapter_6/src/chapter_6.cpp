@@ -91,33 +91,33 @@ DisplayLoop(bool& _success_out)
     // Test Model
     //
     {
-        // Matrix Stacks
-        test_model.GetPosition(dv.v3.x, dv.v3.y, dv.v3.z);
-        matrix_stack.push(matrix_stack.top()); //Translation slot
-        matrix_stack.top() *= glm::translate(glm::mat4(1.0f),
-                                             dv.v3); // Translation matrix
+        // // Matrix Stacks
+        // test_model.GetPosition(dv.v3.x, dv.v3.y, dv.v3.z);
+        // matrix_stack.push(matrix_stack.top()); //Translation slot
+        // matrix_stack.top() *= glm::translate(glm::mat4(1.0f),
+        //                                      dv.v3); // Translation matrix
 
-        matrix_stack.push(matrix_stack.top()); // Rotation slot
-        matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
-                                          scaled_time,
-                                          glm::vec3(0.0f, 1.0f, 0.0f)); // Rotation matrix
+        // matrix_stack.push(matrix_stack.top()); // Rotation slot
+        // matrix_stack.top() *= glm::rotate(glm::mat4(1.0f),
+        //                                   scaled_time,
+        //                                   glm::vec3(0.0f, 1.0f, 0.0f)); // Rotation matrix
 
-        matrix_stack.push(matrix_stack.top()); // Scale slot
-        matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
-                                         glm::vec3(4.25f, 4.25f, 4.25f)); // Scale matrix
+        // matrix_stack.push(matrix_stack.top()); // Scale slot
+        // matrix_stack.top() *= glm::scale(glm::mat4(1.0f),
+        //                                  glm::vec3(4.25f, 4.25f, 4.25f)); // Scale matrix
 
-        // Copy matrices to corresponding uniform values (no view yet).
-        // test_model.ModifyModelMatrix(matrix_stack.top());
-        glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
-                               1,
-                               false,
-                               glm::value_ptr(matrix_stack.top()));
+        // // Copy matrices to corresponding uniform values (no view yet).
+        // // test_model.ModifyModelMatrix(matrix_stack.top());
+        // glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
+        //                        1,
+        //                        false,
+        //                        glm::value_ptr(matrix_stack.top()));
 
-        // Draw
-        test_model.Draw();
+        // // Draw
+        // test_model.Draw();
 
-        matrix_stack.pop(); // Scale matrix removed, rotation matrix on top.
-        matrix_stack.pop(); // Rotation matrix removed, translation matrix on top.
+        // matrix_stack.pop(); // Scale matrix removed, rotation matrix on top.
+        // matrix_stack.pop(); // Rotation matrix removed, translation matrix on top.
     }
 
     // Clear stack
@@ -277,6 +277,9 @@ SetupModels(bool& _success_out)
 void
 Initialize(bool& _success_out)
 {
+    // [ cfarvin::REMOVE ]
+    // glfwInit();
+    
     _success_out                   = false;
     state::StateCache* state_cache = state::StateCache::GetInstance();
     state_cache->Initialize(_success_out, "../src/chapter_6/chapter_6.sus");
@@ -313,13 +316,14 @@ Initialize(bool& _success_out)
 
     // Set initial camera & model positions.
     {
-        SetupModels(_success_out);
-        if (false == _success_out)
-        {
-            Log_e("Unable to set up models.");
-            _success_out = false;
-            return;
-        }
+        // [ cfarvin::RESTORE ]
+        // SetupModels(_success_out);
+        // if (false == _success_out)
+        // {
+        //     Log_e("Unable to set up models.");
+        //     _success_out = false;
+        //     return;
+        // }
     }
 
     _success_out = true;

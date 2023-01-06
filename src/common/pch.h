@@ -31,6 +31,11 @@
 #include "Windows.h"
 #include "wingdi.h"
 
+// [ cfarvin::REMOVE ] Remove these include statements AND the entire include/GLFW folder And the 4
+//                     files with "glew" in their titles in the include/GL folder.
+// #include "GL/glew.h"
+// #include "GLFW/glfw3.h"
+
 #include "KHR/khrplatform.h"
 #include "GL/glcorearb.h"
 #include "GL/wglext.h"

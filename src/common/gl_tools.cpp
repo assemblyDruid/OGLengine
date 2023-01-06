@@ -264,7 +264,7 @@ glt::CreateShaderProgram(bool&               _success_out,
 
     int error_log_list_length = 0;
     glfn::GetProgramiv(program, GL_INFO_LOG_LENGTH, &error_log_list_length);
-    if (error_log_list_length > 0)
+    if (error_log_list_length > 1) // Note: The list length includes the null termination character.
     {
         LogGLCompilationError(program);
         _success_out = false;
