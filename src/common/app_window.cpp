@@ -4,7 +4,7 @@
 
 #include "app_window.h"
 
-#include "gl_function_wrappers.h"
+#include "gl_function_wrappers_COPY.h"
 #include "logging.h"
 #include "state_tools.h"
 #include "windows_platform.h"

@@ -5,9 +5,10 @@
 #include "model.h"
 
 #include "fileio.h"
-#include "gl_function_wrappers.h"
+#include "gl_function_wrappers_COPY.h"
 #include "gl_tools.h"
 #include "logging.h"
+#include "state_tools.h"
 
 BufferedModel::~BufferedModel()
 {

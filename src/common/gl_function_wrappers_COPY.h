@@ -1,12 +1,10 @@
 #ifndef gl_function_wrappers_h
 #define gl_function_wrappers_h
 
-// clang-format off
-#include "pch.h"
-// clang-format on
-
+#include "assert.h"
+#include "gl_tools.h"
 #include "logging.h"
-#include "state_tools.h"
+#include "windows.h"
 
 #ifdef _ENGINE_DEBUG_
 #define _DEBUG_FILE_AND_LINE_PARAMS_ , const char *const &&_file_in, const unsigned int &&_line_in
@@ -22,6 +20,19 @@
 #define _DEBUG_FILE_AND_LINE_ARGS_NO_COMMA_   /* NO OP */
 #define _DEBUG_QUERY_ERRORS_ARGS              /* NO OP */
 #endif
+
+#define CASE_ENUM_RETURN_STR(_enum_in) \
+    case _enum_in:                     \
+    {                                  \
+        return #_enum_in;              \
+    }
+
+#define CASE_ENUM_TO_STR_VAR(_enum_in, _str_var_out) \
+    case _enum_in:                                   \
+    {                                                \
+        _str_var_out = #_enum_in;                    \
+        break;                                       \
+    }
 
 //
 // General Note:
@@ -211,12 +222,55 @@
                   std::move(_width_in),                                                   \
                   std::move(_height_in) _DEBUG_FILE_AND_LINE_ARGS_)
 
-constexpr static const char* const ogl_dll_c_str = "opengl32.dll";
-static const HINSTANCE             ogl_dll       = LoadLibraryA(ogl_dll_c_str);
+struct OglLib
+{
+    OglLib() {};
 
-// Forward declarations from "gl_tools.h".
-struct glt::GLState::ClearColor_t;
-struct glt::GLState::Viewport_t;
+    ~OglLib()
+    {
+        if (nullptr != ogl_dll)
+        {
+            Log_w("OglLib structure being deconstructed without unloading OpenGL library.");
+        }
+    }
+
+    HINSTANCE&
+    Get()
+    {
+        if (nullptr == ogl_dll)
+        {
+            ogl_dll = LoadLibraryA(ogl_dll_c_str);
+            if (nullptr == ogl_dll)
+            {
+                Log_e("Unable to load OpenGL library.");
+            }
+        }
+
+        return ogl_dll;
+    }
+
+    void
+    Free()
+    {
+        if (nullptr != ogl_dll)
+        {
+            FreeLibrary(ogl_dll);
+            return;
+        }
+
+        Log_w("Attempted to free OpenGL library without ever loading it.");
+    }
+
+  private:
+    OglLib(const OglLib&) = delete;
+
+    OglLib
+    operator=(const OglLib&) = delete;
+
+    constexpr static const char* const ogl_dll_c_str = "opengl32.dll";
+    HINSTANCE                          ogl_dll       = nullptr;
+};
+static OglLib ogl_lib;
 
 #ifdef _ENGINE_DEBUG_
 static inline void
@@ -246,9 +300,8 @@ s_QueryErrors(const char* const&& _file_in = nullptr, const unsigned int&& _line
         }
     };
 
-    static const GLenum (*local_glGetError)() = (const GLenum (*)())GetProcAddress(
-      ogl_dll,
-      "glGetError");
+    static const GLenum (*local_glGetError)() = (const GLenum (*)())GetProcAddress(ogl_lib.Get(),
+                                                                                   "glGetError");
     assert(nullptr != local_glGetError);
 
     bool                    errors_found    = false;
@@ -307,19 +360,19 @@ namespace glfn
 
         assert(nullptr != local_glActiveTexture);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLenum* active_texture = &(state_cache->opengl_state->active_texture);
-        if (_texture_in == *active_texture && (true == state_initialized))
-        {
-            return;
-        }
+        // GLenum* active_texture = &(state_cache->opengl_state->active_texture);
+        // if (_texture_in == *active_texture && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glActiveTexture(_texture_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *active_texture   = _texture_in;
+        // *active_texture   = _texture_in;
         state_initialized = true;
     }
 
@@ -347,30 +400,30 @@ namespace glfn
 
         assert(nullptr != local_glBindBuffer);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        // [ cfarvin::TODO ] Performance check. Does commenting out these checks make
-        //                   a meaningful difference under high-stress workloads? If
-        //                   so, these are prevalent in this file. The basic assumption
-        //                   is that comparisons on simple types will be faster than
-        //                   cpu->gpu function calls w/ driver overhead in cases where
-        //                   the values do not actually need to be changed.
-        const unsigned char buffer_target_array_index = static_cast<unsigned char>(
-          GetBufferTargetArrayIndex(std::move(_buffer_target_in)));
-        assert(buffer_target_array_length != buffer_target_array_index); // Equivalent to COUNT.
+        // // [ cfarvin::TODO ] Performance check. Does commenting out these checks make
+        // //                   a meaningful difference under high-stress workloads? If
+        // //                   so, these are prevalent in this file. The basic assumption
+        // //                   is that comparisons on simple types will be faster than
+        // //                   cpu->gpu function calls w/ driver overhead in cases where
+        // //                   the values do not actually need to be changed.
+        // const unsigned char buffer_target_array_index = static_cast<unsigned char>(
+        //   GetBufferTargetArrayIndex(std::move(_buffer_target_in)));
+        // assert(buffer_target_array_length != buffer_target_array_index); // Equivalent to COUNT.
 
-        GLuint* buffer_id = &(
-          state_cache->opengl_state->bound_buffers_by_target_type[buffer_target_array_index]);
-        if ((_buffer_in == *buffer_id) && (true == state_initialized))
-        {
-            return;
-        }
+        // GLuint* buffer_id = &(
+        //   state_cache->opengl_state->bound_buffers_by_target_type[buffer_target_array_index]);
+        // if ((_buffer_in == *buffer_id) && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glBindBuffer(_buffer_target_in, _buffer_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *buffer_id        = _buffer_in;
+        // *buffer_id        = _buffer_in;
         state_initialized = true;
     }
 
@@ -381,28 +434,28 @@ namespace glfn
         static bool state_initialized                            = false;
         static const void (*local_glBindTexture)(GLenum, GLuint) = (const void (*)(
           GLenum target,
-          GLuint texture))GetProcAddress(ogl_dll, "glBindTexture");
+          GLuint texture))GetProcAddress(ogl_lib.Get(), "glBindTexture");
 
         assert(nullptr != local_glBindTexture);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        const unsigned char texture_target_array_index = static_cast<unsigned char>(
-          GetTextureTargetArrayIndex(std::move(_target_in)));
-        assert(texture_target_array_length != texture_target_array_index); // Equivalent to COUNT.
+        // const unsigned char texture_target_array_index = static_cast<unsigned char>(
+        //   GetTextureTargetArrayIndex(std::move(_target_in)));
+        // assert(texture_target_array_length != texture_target_array_index); // Equivalent to COUNT.
 
-        GLuint* texture_id = &(
-          state_cache->opengl_state->bound_textures_by_target_type[texture_target_array_index]);
-        if (_texture_in == *texture_id && (true == state_initialized))
-        {
-            return;
-        }
+        // GLuint* texture_id = &(
+        //   state_cache->opengl_state->bound_textures_by_target_type[texture_target_array_index]);
+        // if (_texture_in == *texture_id && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glBindTexture(_target_in, _texture_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *texture_id       = _texture_in;
+        // *texture_id       = _texture_in;
         state_initialized = true;
     }
 
@@ -415,21 +468,21 @@ namespace glfn
 
         assert(nullptr != local_glBindVertexArray);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLuint* currently_bound_vertex_array = &(
-          state_cache->opengl_state->currently_bound_vertex_array);
-        if ((_vertex_array_in == *currently_bound_vertex_array) && (true == state_initialized))
-        {
-            return;
-        }
+        // GLuint* currently_bound_vertex_array = &(
+        //   state_cache->opengl_state->currently_bound_vertex_array);
+        // if ((_vertex_array_in == *currently_bound_vertex_array) && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glBindVertexArray(_vertex_array_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *currently_bound_vertex_array = _vertex_array_in;
-        state_initialized             = true;
+        // *currently_bound_vertex_array = _vertex_array_in;
+        state_initialized = true;
     }
 
     inline void
@@ -450,8 +503,8 @@ namespace glfn
     inline void
     Impl_Clear(const GLbitfield&& _bit_mask_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glClear)(GLbitfield) = (const void (*)(
-          GLbitfield))GetProcAddress(ogl_dll, "glClear");
+        static const void (*local_glClear)(
+          GLbitfield) = (const void (*)(GLbitfield))GetProcAddress(ogl_lib.Get(), "glClear");
         assert(nullptr != local_glClear);
 
         local_glClear(_bit_mask_in);
@@ -466,26 +519,25 @@ namespace glfn
     {
         static bool state_initialized = false;
         static const void (*local_glClearColor)(GLfloat, GLfloat, GLfloat, GLfloat) =
-          (const void (*)(GLfloat, GLfloat, GLfloat, GLfloat))GetProcAddress(
-            ogl_dll,
-            "glClearColor");
+          (const void (*)(GLfloat, GLfloat, GLfloat, GLfloat))GetProcAddress(ogl_lib.Get(),
+                                                                             "glClearColor");
 
         assert(nullptr != local_glClearColor);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        glt::GLState::ClearColor_t* clear_color = &(state_cache->opengl_state->ClearColor);
-        if ((r_in == clear_color->r) && (g_in == clear_color->g) && (b_in == clear_color->b) &&
-            (a_in == clear_color->a) && (true == state_initialized))
-        {
-            return;
-        }
+        // glt::GLState::ClearColor_t* clear_color = &(state_cache->opengl_state->ClearColor);
+        // if ((r_in == clear_color->r) && (g_in == clear_color->g) && (b_in == clear_color->b) &&
+        //     (a_in == clear_color->a) && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glClearColor(r_in, g_in, b_in, a_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *clear_color      = { r_in, g_in, b_in, a_in };
+        // *clear_color      = { r_in, g_in, b_in, a_in };
         state_initialized = true;
     }
 
@@ -529,25 +581,25 @@ namespace glfn
     inline void
     Impl_CullFace(const GLenum&& _facet_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                 = false;
-        static const void (*local_glCullFace)(GLenum) = (const void (*)(
-          GLenum))GetProcAddress(ogl_dll, "glCullFace");
+        static bool state_initialized = false;
+        static const void (*local_glCullFace)(
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_lib.Get(), "glCullFace");
 
         assert(nullptr != local_glCullFace);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLenum* cull_face_facet = &(state_cache->opengl_state->cull_face_facet);
-        if (_facet_in == *cull_face_facet && (true == state_initialized))
-        {
-            return;
-        }
+        // GLenum* cull_face_facet = &(state_cache->opengl_state->cull_face_facet);
+        // if (_facet_in == *cull_face_facet && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glCullFace(_facet_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *cull_face_facet  = _facet_in;
+        // *cull_face_facet  = _facet_in;
         state_initialized = true;
     }
 
@@ -576,7 +628,7 @@ namespace glfn
     {
         static const void (*local_glDeleteTextures)(GLsizei, const GLuint*) = (const void (*)(
           GLsizei,
-          const GLuint*))GetProcAddress(ogl_dll, "glDeleteTextures");
+          const GLuint*))GetProcAddress(ogl_lib.Get(), "glDeleteTextures");
         assert(nullptr != local_glDeleteTextures);
 
         local_glDeleteTextures(_texture_count_in, _textures_in);
@@ -586,26 +638,26 @@ namespace glfn
     inline void
     Impl_DepthFunc(const GLenum&& _depth_comparison_mode_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                  = false;
-        static const void (*local_glDepthFunc)(GLenum) = (const void (*)(
-          GLenum))GetProcAddress(ogl_dll, "glDepthFunc");
+        static bool state_initialized = false;
+        static const void (*local_glDepthFunc)(
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_lib.Get(), "glDepthFunc");
 
         assert(nullptr != local_glDepthFunc);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLenum* depth_comparison_mode = &(state_cache->opengl_state->depth_comparison_mode);
-        if (_depth_comparison_mode_in == *depth_comparison_mode && (true == state_initialized))
-        {
-            return;
-        }
+        // GLenum* depth_comparison_mode = &(state_cache->opengl_state->depth_comparison_mode);
+        // if (_depth_comparison_mode_in == *depth_comparison_mode && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glDepthFunc(_depth_comparison_mode_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        state_initialized      = true;
-        *depth_comparison_mode = _depth_comparison_mode_in;
+        state_initialized = true;
+        // *depth_comparison_mode = _depth_comparison_mode_in;
     }
 
     inline void
@@ -615,9 +667,8 @@ namespace glfn
                       const void*&& _data_byte_offset_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
         static const void (*local_glDrawElements)(GLenum, GLsizei, GLenum, const void*) =
-          (const void (*)(GLenum, GLsizei, GLenum, const void*))GetProcAddress(
-            ogl_dll,
-            "glDrawElements");
+          (const void (*)(GLenum, GLsizei, GLenum, const void*))GetProcAddress(ogl_lib.Get(),
+                                                                               "glDrawElements");
 
         assert(nullptr != local_glDrawElements);
 
@@ -633,25 +684,25 @@ namespace glfn
     {
         static bool state_initialized = false;
         static const void (*local_glEnable)(
-          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_dll, "glEnable");
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_lib.Get(), "glEnable");
 
         assert(nullptr != local_glEnable);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        std::unordered_set<GLenum>* enabled_server_side_capabilities = &(
-          state_cache->opengl_state->enabled_server_side_capabilities);
-        if (true == enabled_server_side_capabilities->contains(_capability_in) &&
-            (true == state_initialized))
-        {
-            return;
-        }
+        // std::unordered_set<GLenum>* enabled_server_side_capabilities = &(
+        //   state_cache->opengl_state->enabled_server_side_capabilities);
+        // if (true == enabled_server_side_capabilities->contains(_capability_in) &&
+        //     (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glEnable(_capability_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        enabled_server_side_capabilities->emplace(_capability_in);
+        // enabled_server_side_capabilities->emplace(_capability_in);
         state_initialized = true;
     }
 
@@ -664,44 +715,44 @@ namespace glfn
 
         assert(nullptr != local_glEnableVertexAttribArray);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLuint* currently_enabled_vertex_attribute_array = &(
-          state_cache->opengl_state->currently_enabled_vertex_attribute_array);
-        if (_index_in == *currently_enabled_vertex_attribute_array && (true == state_initialized))
-        {
-            return;
-        }
+        // GLuint* currently_enabled_vertex_attribute_array = &(
+        //   state_cache->opengl_state->currently_enabled_vertex_attribute_array);
+        // if (_index_in == *currently_enabled_vertex_attribute_array && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glEnableVertexAttribArray(_index_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *currently_enabled_vertex_attribute_array = _index_in;
-        state_initialized                         = true;
+        // *currently_enabled_vertex_attribute_array = _index_in;
+        state_initialized = true;
     }
 
     inline void
     Impl_FrontFace(const GLenum&& _winding_order_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                  = false;
-        static const void (*lobal_glFrontFace)(GLenum) = (const void (*)(
-          GLenum))GetProcAddress(ogl_dll, "glFrontFace");
+        static bool state_initialized = false;
+        static const void (*lobal_glFrontFace)(
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_lib.Get(), "glFrontFace");
 
         assert(nullptr != lobal_glFrontFace);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLenum* winding_order = &(state_cache->opengl_state->front_face);
-        if (_winding_order_in == *winding_order && (true == state_initialized))
-        {
-            return;
-        }
+        // GLenum* winding_order = &(state_cache->opengl_state->front_face);
+        // if (_winding_order_in == *winding_order && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         lobal_glFrontFace(_winding_order_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
-        *winding_order    = _winding_order_in;
+        // *winding_order    = _winding_order_in;
         state_initialized = true;
     }
 
@@ -737,7 +788,7 @@ namespace glfn
     {
         static const void (*local_glGenTextures)(GLsizei, GLuint*) = (const void (*)(
           GLsizei,
-          GLuint*))GetProcAddress(ogl_dll, "glGenTextures");
+          GLuint*))GetProcAddress(ogl_lib.Get(), "glGenTextures");
 
         assert(nullptr != local_glGenTextures);
 
@@ -765,7 +816,7 @@ namespace glfn
     {
         static const void (*local_glGetFloatv)(GLenum, GLfloat*) = (const void (*)(
           GLenum,
-          GLfloat*))GetProcAddress(ogl_dll, "glGetFloatv");
+          GLfloat*))GetProcAddress(ogl_lib.Get(), "glGetFloatv");
 
         assert(nullptr != local_glGetFloatv);
 
@@ -841,8 +892,7 @@ namespace glfn
     Impl_GetString(const GLenum&& _name_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
         static const GLubyte* (*local_glGetString)(
-          GLenum) = (const GLubyte* (*)(GLenum))GetProcAddress(ogl_dll,
-                                                               "glGetString");
+          GLenum) = (const GLubyte* (*)(GLenum))GetProcAddress(ogl_lib.Get(), "glGetString");
 
         assert(nullptr != local_glGetString);
 
@@ -857,7 +907,7 @@ namespace glfn
     {
         static const GLubyte* (*local_glGetStringi)(
           GLenum,
-          GLuint) = (const GLubyte* (*)(GLenum, GLuint))GetProcAddress(ogl_dll,
+          GLuint) = (const GLubyte* (*)(GLenum, GLuint))GetProcAddress(ogl_lib.Get(),
                                                                        "glGetStringi");
 
         assert(nullptr != local_glGetStringi);
@@ -924,8 +974,9 @@ namespace glfn
     Impl_PixelStorei(const GLenum&&                   _paramter_name_in,
                      const GLint&& _paramter_value_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glPixelStorei)(GLenum, GLint) = (const void (*)(GLenum, GLint))
-          GetProcAddress(ogl_dll, "glPixelStorei");
+        static const void (*local_glPixelStorei)(
+          GLenum,
+          GLint) = (const void (*)(GLenum, GLint))GetProcAddress(ogl_lib.Get(), "glPixelStorei");
 
         assert(nullptr != local_glPixelStorei);
 
@@ -980,8 +1031,7 @@ namespace glfn
                                          GLint,
                                          GLenum,
                                          GLenum,
-                                         const void*))GetProcAddress(ogl_dll,
-                                                                     "glTexImage2D");
+                                         const void*))GetProcAddress(ogl_lib.Get(), "glTexImage2D");
 
         assert(nullptr != local_glTexImage2D);
 
@@ -1002,9 +1052,8 @@ namespace glfn
                       const GLenum&&              _parameter_name_in,
                       const GLint&& _parameter_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (
-          *local_glTexParameteri)(GLenum, GLenum, GLuint) = (const void (*)(GLenum, GLenum, GLuint))
-          GetProcAddress(ogl_dll, "glTexParameteri");
+        static const void (*local_glTexParameteri)(GLenum, GLenum, GLuint) =
+          (const void (*)(GLenum, GLenum, GLuint))GetProcAddress(ogl_lib.Get(), "glTexParameteri");
 
         assert(nullptr != local_glTexParameteri);
 
@@ -1017,10 +1066,8 @@ namespace glfn
                       const GLenum&&                _parameter_name_in,
                       const GLfloat&& _parameter_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glTexParameterf)(GLenum, GLenum, GLfloat) = (const void (*)(
-          GLenum,
-          GLenum,
-          GLfloat))GetProcAddress(ogl_dll, "glTexParameterf");
+        static const void (*local_glTexParameterf)(GLenum, GLenum, GLfloat) =
+          (const void (*)(GLenum, GLenum, GLfloat))GetProcAddress(ogl_lib.Get(), "glTexParameterf");
 
         assert(nullptr != local_glTexParameterf);
 
@@ -1067,19 +1114,19 @@ namespace glfn
 
         assert(nullptr != local_glUseProgram);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        GLenum* program_id = &(state_cache->opengl_state->program_id);
-        if (_program_in == *program_id && (true == state_initialized))
-        {
-            return;
-        }
+        // GLenum* program_id = &(state_cache->opengl_state->program_id);
+        // if (_program_in == *program_id && (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glUseProgram(_program_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *program_id       = _program_in;
+        // *program_id       = _program_in;
         state_initialized = true;
     }
 
@@ -1114,31 +1161,29 @@ namespace glfn
                   const GLsizei&&            _width_in,
                   const GLsizei&& _height_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                                         = false;
-        static const void (*local_glViewport)(GLint, GLint, GLsizei, GLsizei) = (const void (*)(
-          GLint,
-          GLint,
-          GLsizei,
-          GLsizei))GetProcAddress(ogl_dll, "glViewport");
+        static bool state_initialized = false;
+        static const void (*local_glViewport)(GLint, GLint, GLsizei, GLsizei) =
+          (const void (*)(GLint, GLint, GLsizei, GLsizei))GetProcAddress(ogl_lib.Get(),
+                                                                         "glViewport");
 
         assert(nullptr != local_glViewport);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
-        assert(nullptr != state_cache->opengl_state);
+        // static state::StateCache* state_cache = state::StateCache::GetInstance();
+        // assert(nullptr != state_cache->opengl_state);
 
-        glt::GLState::Viewport_t* viewport = &(state_cache->opengl_state->Viewport);
-        if ((_lower_left_corner_x_in == viewport->lower_left_corner_x) &&
-            (_lower_left_corner_y_in == viewport->lower_left_corner_y) &&
-            (_width_in == viewport->width) && (_height_in == viewport->height) &&
-            (true == state_initialized))
-        {
-            return;
-        }
+        // glt::GLState::Viewport_t* viewport = &(state_cache->opengl_state->Viewport);
+        // if ((_lower_left_corner_x_in == viewport->lower_left_corner_x) &&
+        //     (_lower_left_corner_y_in == viewport->lower_left_corner_y) &&
+        //     (_width_in == viewport->width) && (_height_in == viewport->height) &&
+        //     (true == state_initialized))
+        // {
+        //     return;
+        // }
 
         local_glViewport(_lower_left_corner_x_in, _lower_left_corner_y_in, _width_in, _height_in);
         s_QueryErrors(_DEBUG_QUERY_ERRORS_ARGS);
 
-        *viewport = { _lower_left_corner_x_in, _lower_left_corner_y_in, _width_in, _height_in };
+        // *viewport = { _lower_left_corner_x_in, _lower_left_corner_y_in, _width_in, _height_in };
         state_initialized = true;
     }
 
