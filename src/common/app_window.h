@@ -10,15 +10,6 @@ namespace app_window
     void
     Initialize(bool& _success_out);
 
-    // [ cfarvin::DANGER ] I believe that we will have to do this when we bind programs,
-    //                     as different rendering programs / shader combinations will
-    //                     each have their own copy of a reference to the projection
-    //                     matrix. In this case, only the rendering program bound
-    //                     during the window resize will get updated, and the others
-    //                     will be the dirty.
-    void
-    UpdateRenderingProgramProjectionMatrix(bool& _success_out);
-
     void
     UpdateAspectRatio(const float& width, const float& height);
 

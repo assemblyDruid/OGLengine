@@ -17,18 +17,18 @@ Camera::Camera() noexcept
 };
 
 void
-Camera::LookAt(const glm::vec3& _target_position, glm::mat4& _view_matrix) noexcept
+Camera::LookAt(const glm::vec3& _target_position_in, glm::mat4& _view_matrix_out) noexcept
 {
     // [ cfarvin::TODO ] Remove these glm:: allocations
-    _view_matrix = glm::translate(
+    _view_matrix_out = glm::translate(
       i_mat,
-      glm::vec3(ijk_orientation * xyz_translation * glm::vec4(_target_position, 1.0f)));
+      glm::vec3(ijk_orientation * xyz_translation * glm::vec4(_target_position_in, 1.0f)));
 }
 
 void
-Camera::SetPosition(const float&& _x, const float&& _y, const float&& _z) noexcept
+Camera::SetPosition(const float&& _x_in, const float&& _y_in, const float&& _z_in) noexcept
 {
-    Object3::SetPosition(std::move(_x), std::move(_y), std::move(_z));
+    Object3::SetPosition(std::move(_x_in), std::move(_y_in), std::move(_z_in));
     UpdateTranslationMatrix();
 }
 

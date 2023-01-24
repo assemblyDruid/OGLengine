@@ -15,6 +15,11 @@ namespace state
     struct StateCache;
 }
 
+// -------------------------------------------------------------------------
+//
+//                           Design Philosophy
+//
+// -------------------------------------------------------------------------
 // Note: Declare at the end of state structure definitions to ensure that
 //       classes/structures do not attempt to create their own local copies.
 //       All changes to to engine state must go through the StateCache or

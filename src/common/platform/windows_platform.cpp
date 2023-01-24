@@ -5,14 +5,14 @@
 #include "windows_platform.h"
 
 #include "app_window.h"
-#include "gl_function_wrappers_COPY.h"
+#include "gl_function_wrappers.h"
 #include "gl_tools.h"
 #include "logging.h"
 #include "state_tools.h"
 
 // [ cfarvin::TODO ] Put this in an object, deallocate when finished with Win32 setup.
 std::function<HGLRC(HDC, HGLRC, const int*)> wglCreateContextAttribsARB;
-std::function<bool(GLint)> wglSwapIntervalEXT;
+std::function<bool(GLint)>                   wglSwapIntervalEXT;
 
 static LRESULT CALLBACK
 WindowProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -26,7 +26,10 @@ WindowProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             state_cache->is_running = false;
             break;
         }
-
+        case WM_CREATE:
+        {
+            break;
+        }
         case WM_DESTROY:
         {
             // sys_event = uEventClose; // [ cfarvin::REVISIT ]
@@ -61,6 +64,10 @@ WindowProcedure(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         case WM_SIZE:
         {
+            bool success = false;
+            app_window::OnWindowResize(success, LOWORD(lParam), HIWORD(lParam));
+            assert(true == success);
+
             // window_props.width  = (uint16_t)LOWORD(lParam);
             // window_props.height = (uint16_t)HIWORD(lParam);
 
@@ -421,8 +428,7 @@ GetWin32PixelFormat(bool&               _success_out,
     }
 
     // Obtain a function pointer to wglSwapIntervalEXT.
-    wglSwapIntervalEXT = (bool (*)(GLint))wglGetProcAddress(
-      "wglSwapIntervalEXT");
+    wglSwapIntervalEXT = (bool (*)(GLint))wglGetProcAddress("wglSwapIntervalEXT");
     if (nullptr == wglSwapIntervalEXT)
     {
         _success_out = false;
@@ -466,6 +472,16 @@ GetWin32PixelFormat(bool&               _success_out,
     };
     // clang-format on
 
+    // From Khronos specification for wglChoosePixelFormatARB:
+    // -------------------------------------------------------
+    // <piFormats> points to an array of returned indices of the matching
+    // pixel formats. The best pixel formats (i.e., closest match and best
+    // format for the hardware) are at the head of the list. The caller
+    // must allocate this array and it must have at least <nMaxFormats>
+    // entries.
+    //
+    // Note: This confirms our assumption about the "best" matching pixel
+    //       format indices being at the head of the returned buffer.
     unsigned int format_count         = 0;
     bool         pixel_format_success = wglChoosePixelFormatARB(
       dummy_context,                   // HDC for window.
@@ -482,20 +498,24 @@ GetWin32PixelFormat(bool&               _success_out,
         return;
     }
 
-    // [ cfarvin::DEBUG::REMOVE ]
-    // [ cfarvin::TODO ] Ensure that our assumption that the choose pixel format functions
-    //                   are indeed returning pixel formats in order from the least to greatest
-    //                   buffer indices that match our requested pixel descriptions. This is
-    //                   because, later, when we're setting the pixel format, we simply use the
-    //                   first index in the return buffer. This may be wrong, and bad, and sad.
-    Log_i("Number of formats returned by implementation: " + std::to_string(format_count));
-
     // ---------------------------------------------------------------------
     //
     // Destruction of dummy rendering context and other dummy win32 objects.
     //
     // ---------------------------------------------------------------------
 
+    // Note: Testing shows on all common hardware implementations that the function
+    //       pointers for WGL functions remain valid even after the win32 objects
+    //       associated with windows and contexts (both device and rendering) are
+    //       destroyed. Some sources have warned against this, so in the future if
+    //       it is suddenly found that WGL functions are no longer working as
+    //       expected, this should be one of the first things to test. In that case,
+    //       we would want to defer destruction of the win32 objects until after
+    //       the WGL functions have been used in the _actual_, as opposed to the
+    //       _dummy_ win32 object creation. To do so, the local CreateWin32Window
+    //       function will have to be implemented/moved to account for using dummy
+    //       variables for some window class definitions instead of those in the
+    //       win32 state cache, which is how it is currently implemented.
     DestroyWin32Objects(_success_out,
                         dummy_window,
                         dummy_context,
@@ -672,7 +692,7 @@ platform::win32::Initialize(bool& _success_out)
     // be pushed or popped.  The current swap interval for the window
     // associated with the current context can be obtained by calling
     // wglGetSwapIntervalEXT.  The default swap interval is 1.
-    wglSwapIntervalEXT(1); // [ cfarvin::TOD ] Add to state as v-sync option.
+    wglSwapIntervalEXT(1); // [ cfarvin::TOD ] Add to state cache as v-sync option.
 
     bool make_current_success = wglMakeCurrent(win32_state->device_context,
                                                win32_state->gl_rendering_context);

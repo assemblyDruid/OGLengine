@@ -5,7 +5,7 @@
 #include "model.h"
 
 #include "fileio.h"
-#include "gl_function_wrappers_COPY.h"
+#include "gl_function_wrappers.h"
 #include "gl_tools.h"
 #include "logging.h"
 #include "state_tools.h"
@@ -34,11 +34,28 @@ BufferedModel::AddVertexArrayObject(bool& _success_out, GLuint& _vao_id_out)
     _success_out        = true;
 }
 
+ProgramMatrixInfo*
+BufferedModel::GetProgramMatrixInfoByRenderingProgramID(
+  const GLuint&& _rendering_program_id_in) const noexcept
+{
+    ProgramMatrixInfo* target_program_matrix_info = nullptr;
+    for (auto pm_info : program_matrix_infos)
+    {
+        if (_rendering_program_id_in == pm_info.rendering_program_id)
+        {
+            target_program_matrix_info = &pm_info;
+            break;
+        }
+    }
+
+    return target_program_matrix_info;
+}
+
 void
-BufferedModel::AddModelMatrix(bool&             _success_out,
-                              const glm::mat4&  _model_matrix_in,
-                              const GLuint&     _rendering_program_id_in,
-                              const char* const _matrix_uniform_name_in)
+BufferedModel::AddMatrix(bool&              _success_out,
+                         const GLuint&&      _rendering_program_id_in,
+                         const MatrixType&& _matrix_type_in,
+                         const char* const  _matrix_uniform_name_in)
 {
     if (false == glfn::IsProgram(_rendering_program_id_in))
     {
@@ -61,9 +78,48 @@ BufferedModel::AddModelMatrix(bool&             _success_out,
         return;
     }
 
-    model_matrix_info.model_matrix                 = _model_matrix_in;
-    model_matrix_info.model_matrix_layout_location = layout_location;
-    model_matrix_info.rendering_program_id         = _rendering_program_id_in;
+    // Obtain the ProgramMatrixInfo structure from the array by rendering program id.
+    ProgramMatrixInfo* target_program_matrix_info = GetProgramMatrixInfoByRenderingProgramID(
+      std::move(_rendering_program_id_in));
+
+    const size_t matrix_type_index = static_cast<size_t>(_matrix_type_in);
+
+    // If a ProgramMatrixInfo with the provided rendering program ID was not found, add a new one.
+    if (nullptr == target_program_matrix_info)
+    {
+        // Note: Cannot .emplace() into vector since we cannot dynamically initialize the matrix_infos
+        //       array with the correct index as determined by the value of _matrix_type_in at runtime.
+        //       Thus, we must initialize one on the stack and .push_back() instead.
+        ProgramMatrixInfo temp_program_matrix_info    = {};
+        temp_program_matrix_info.rendering_program_id = _rendering_program_id_in;
+        temp_program_matrix_info.shader_layout_locations[matrix_type_index] = layout_location;
+
+        // Set the bit for this matrix type to 1 in the ProgramMatrixInfo structure corresponding with the
+        // provided rendering program ID to show that it has been initialized.
+        temp_program_matrix_info.initialized_matrix_types[matrix_type_index] = true;
+
+        // Add the new program matrix info to the private vector which tracks them.
+        program_matrix_infos.push_back(temp_program_matrix_info);
+    }
+    // If a ProgramMatrixInfo with the provided rendering program ID was found, and a matrix of the
+    // provided type was already provided, print a warning. This may need to be removed later if it
+    // is determined that there is good reason for modifying matrices (perhaps a ModifyMatrix function
+    // would be useful in that case.).
+    else if (true == target_program_matrix_info->initialized_matrix_types[matrix_type_index])
+    {
+        Log_w("Attempted to \"add\" a matrix that already exists. Was this on purpose? Do we need "
+              "a \"ModifyMatrix\" function as well?");
+    }
+    // A ProgramMatrixInfo with the provided rendering program ID was found, though this is the first
+    // matrix of the provided type. Add that matrix info and set the corresponding initialized bit.
+    else
+    {
+        assert(_rendering_program_id_in == target_program_matrix_info->rendering_program_id);
+        target_program_matrix_info->shader_layout_locations[matrix_type_index] = layout_location;
+
+        assert(false == target_program_matrix_info->initialized_matrix_types[matrix_type_index]);
+        target_program_matrix_info->initialized_matrix_types[matrix_type_index] = true;
+    }
 }
 
 GLuint
@@ -194,17 +250,32 @@ BufferedModel::EnableVertexAttribute(bool& _success_out, const GLuint&& _attribu
 }
 
 void
-BufferedModel::ModifyModelMatrix(const glm::mat4& _matrix_modifier_in)
+BufferedModel::ModifyMatrix(const GLuint&&     _rendering_program_id_in,
+                            const MatrixType&& _matrix_type_in,
+                            const glm::mat4&   _matrix_modifier_in) const noexcept
 {
-    // [ cfarvin::TODO ] You are not confident in this.
-    static const state::StateCache* const state_cache = state::StateCache::GetInstance();
-    assert(nullptr != state_cache->opengl_state);
-    glfn::UseProgram(state_cache->opengl_state->program_id);
+    // Note: Due to the expected high call volume of this function in the main render and
+    //       draw loop we are making an assumption that the size of this array, which
+    //       represents the number of shader rendering programs associated with this
+    //       _individual_ model, is very small and effectively instant to iterate over in
+    //       order to find the ProgramMatrixInfo by the rendering program ID.
+    assert(3 >= program_matrix_infos.size());
 
-    glfn::UniformMatrix4fv(model_matrix_info.model_matrix_layout_location,
-                           1,
-                           false,
-                           glm::value_ptr(_matrix_modifier_in));
+    // Note: Iterates over all elements of the vector storing ProgramMatrixInfo(s) to find one
+    //       that matches the provided rendering program ID.
+    ProgramMatrixInfo* target_program_matrix_info = GetProgramMatrixInfoByRenderingProgramID(
+      std::move(_rendering_program_id_in));
+
+    // Note: We assert here rather than throwing an error and setting a _success_out condition
+    //       because the expected call volume of this function is very high and within the main
+    //       render loop.
+    assert(nullptr != target_program_matrix_info);
+
+    glfn::UseProgram(_rendering_program_id_in);
+    const size_t matrix_layout_location_index = static_cast<size_t>(_matrix_type_in);
+    const GLuint matrix_layout_location       = target_program_matrix_info
+                                            ->shader_layout_locations[matrix_layout_location_index];
+    glfn::UniformMatrix4fv(matrix_layout_location, 1, false, glm::value_ptr(_matrix_modifier_in));
 
     // [ cfarvin::TODO ]
     // Should we go through all of these functions an do things like:
@@ -218,8 +289,19 @@ BufferedModel::Draw() const noexcept
     assert(nullptr != buffer_store.element_buffer);
     assert(nullptr != vertex_array_object);
 
-    // [ cfarvin::TODO ]
-    // Right now we're not binding a gl program. Das good?
+    // [ cfarvin::TEMPORARY ] Since the codebase is in a state that only uses a single rendering
+    //                        program, it is best to use the rendering program from the state
+    //                        cache for now. As the codebase evolves to use more complex rendering
+    //                        using models that require more than a single rendering program, it
+    //                        will be necessary to revisit this decision and implement a system which
+    //                        accounts for them. It won't be clear how to do this well until it is time
+    //                        to start, so, the decision was made not to spend time creating a complex
+    //                        system which would likely need a complete re-write when the time comes.
+    //
+    // NOTE -- This is also present in TexturedModel::Draw();
+    const static state::StateCache* const state_cache = state::StateCache::GetInstance();
+    assert(nullptr != state_cache->opengl_state);
+    glfn::UseProgram(state_cache->opengl_state->program_id);
 
     // Note: Avoiding scoped binding helper objects in draw loop.
     glfn::BindVertexArray(*vertex_array_object);
@@ -324,9 +406,33 @@ TexturedModel::Draw() const noexcept
     // Note: Avoiding scoped binding helper objects in draw loop.
     glfn::BindVertexArray(*vertex_array_object);
 
-    static const state::StateCache* const state_cache = state::StateCache::GetInstance();
-    assert(nullptr != state_cache->opengl_state);
-    glfn::UseProgram(state_cache->opengl_state->program_id);
+    // [ cfarvin::TEMPORARY ] Since the codebase is in a state that only uses a single rendering
+    //                        program, it is best to use the rendering program from the state
+    //                        cache for now. As the codebase evolves to use more complex rendering
+    //                        using models that require more than a single rendering program, it
+    //                        will be necessary to revisit this decision and implement a system which
+    //                        accounts for them. It won't be clear how to do this well until it is time
+    //                        to start, so, the decision was made not to spend time creating a complex
+    //                        system which would likely need a complete re-write when the time comes.
+    //
+    // NOTE -- This is also present in BufferedModel::Draw();
+    {
+        const static state::StateCache* const state_cache = state::StateCache::GetInstance();
+        assert(nullptr != state_cache->opengl_state);
+
+        const GLuint current_program_id = state_cache->opengl_state->program_id;
+        glfn::UseProgram(current_program_id);
+
+        // Note: This entire section is already temporary, but just for good measure, it is worth noting
+        //       that this is only valid as at the present time there is only one rendering program to bind,
+        //       and thus only one place in which the projection matrix needs to be kept up-to-date, despite
+        //       its relatively constant nature. In the future, if there is more than one rendering program,
+        //       a new system will need to be implemented. See the notes on this in app_window.cpp, particularly
+        //       those in app_window.cpp::OnWindowResize();
+        ModifyMatrix(std::move(current_program_id),
+                     std::move(MatrixType::mtPROJECTION_MATRIX),
+                     std::move(state_cache->window_state.p_mat));
+    }
 
     if (nullptr != currently_enabled_texture)
     {

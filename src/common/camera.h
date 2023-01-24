@@ -12,10 +12,10 @@ struct Camera : protected Object3
     Camera() noexcept;
 
     void
-    LookAt(const glm::vec3& _target_position, glm::mat4& _view_matrix) noexcept;
+    LookAt(const glm::vec3& _target_position_in, glm::mat4& _view_matrix_out) noexcept;
 
     void
-    SetPosition(const float&& _x, const float&& _y, const float&& _z) noexcept;
+    SetPosition(const float&& _x_in, const float&& _y_in, const float&& _z_in) noexcept;
 
   private:
     void

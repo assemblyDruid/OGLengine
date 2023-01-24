@@ -54,6 +54,7 @@
 #include "stdint.h"
 #include "time.h"
 
+#include <bitset>
 #include <chrono>
 #include <cmath>
 #include <filesystem>

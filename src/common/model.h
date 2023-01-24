@@ -8,6 +8,8 @@
 #include "gl_tools.h"
 #include "object3.h"
 
+// [ cfarvin::REVISIT ] Should all of this go in a "model" namespace?
+
 struct Model : protected Object3
 {
     using Object3::GetOrientation;
@@ -19,11 +21,28 @@ struct Model : protected Object3
     glm::mat4 model_matrix;
 };
 
-struct ModelMatrixInfo
+// [ cfarvin::REVISIT ] Does this belong in glt? More general than OpenGL?
+//                      Currently v_mat and p_mat are being stored in
+//                      app_window::state (state_tools.h)
+enum class MatrixType
 {
-    glm::mat4 model_matrix;
-    GLuint    model_matrix_layout_location;
-    GLuint    rendering_program_id;
+    mtMODEL_MATRIX = 0,
+    mtVIEW_MATRIX,
+    mtPROJECTION_MATRIX,
+    mtCOUNT
+};
+constexpr size_t matrix_type_count = static_cast<size_t>(MatrixType::mtCOUNT);
+
+struct ProgramMatrixInfo
+{
+    GLuint rendering_program_id                       = 0;
+    GLuint shader_layout_locations[matrix_type_count] = {};
+
+    // Note: This member tracks the initialized state for each of the available MatrixType
+    //       enum definitions. Default state is 0, indicating that no matrix types have
+    //       been initialized. Bits at offsets defined by the integer values of the
+    //       MatrixType enumeration are set to 1 when a matrix of that type is initialized.
+    std::bitset<matrix_type_count> initialized_matrix_types = { 0 };
 };
 
 struct BufferedModel : Model
@@ -32,10 +51,10 @@ struct BufferedModel : Model
     AddVertexArrayObject(bool& _success_out, GLuint& _vao_id_out);
 
     void
-    AddModelMatrix(bool&             _success_out,
-                   const glm::mat4&  _model_matrix_in,
-                   const GLuint&     _rendering_program_id_in,
-                   const char* const _matrix_uniform_name_in);
+    AddMatrix(bool&              _success_out,
+              const GLuint&&      _rendering_program_id_in,
+              const MatrixType&& _matrix_type_in,
+              const char* const  _matrix_uniform_name_in);
 
     GLuint
     AddArrayBuffer(
@@ -61,16 +80,25 @@ struct BufferedModel : Model
     void
     EnableVertexAttribute(bool& _success_out, const GLuint&& _attribute_index_in);
 
+    // Note: Marked `const` and does not modify anything in the BufferedModel class.
+    //       Though, it may modify values in the state cache.
     void
-    ModifyModelMatrix(const glm::mat4& _matrix_modifier_in);
+    ModifyMatrix(const GLuint&&     _rendering_program_id_in,
+                 const MatrixType&& _matrix_type_in,
+                 const glm::mat4&   _matrix_modifier_in) const noexcept;
 
     void
     Draw() const noexcept;
 
   protected:
+    ProgramMatrixInfo*
+    GetProgramMatrixInfoByRenderingProgramID(
+      const GLuint&& _rendering_program_id_in) const noexcept;
+
     GLuint*            vertex_array_object = nullptr;
     glt::GLBufferStore buffer_store;
-    ModelMatrixInfo    model_matrix_info;
+
+    std::vector<ProgramMatrixInfo> program_matrix_infos;
 
     ~BufferedModel();
 };

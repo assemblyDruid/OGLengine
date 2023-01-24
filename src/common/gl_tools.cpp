@@ -5,7 +5,7 @@
 #include "gl_tools.h"
 
 #include "fileio.h"
-#include "gl_function_wrappers_COPY.h"
+#include "gl_function_wrappers.h"
 #include "image_tools.h"
 #include "logging.h"
 

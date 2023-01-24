@@ -4,7 +4,7 @@
 
 #include "app_window.h"
 #include "camera.h"
-#include "gl_function_wrappers_COPY.h"
+#include "gl_function_wrappers.h"
 #include "gl_tools.h"
 #include "image_tools.h"
 #include "logging.h"
@@ -18,23 +18,17 @@
 // [ cfarvin::TODO ] Should these be moved to object classes?
 //                   Possibly consumed by model importer along with which
 //                   shaders to use?
-//GLuint rendering_program;
-GLuint mv_location;
-GLuint p_location;
+GLuint projection_matrix_shader_layout_location;
 
 std::stack<glm::mat4> matrix_stack = {};
 Camera                camera;
 TexturedModel         test_model;
-
-// [ cfarvin::TODO ] Should these be moved to shaders?
-
-Timer timer;
-float display_loop_miliseconds = 0.0f;
+Timer                 timer;
+float                 display_loop_miliseconds = 0.0f;
 
 struct DisplayVars
 {
     glm::vec3 v3;
-    glm::mat4 m4;
 };
 DisplayVars dv;
 
@@ -43,12 +37,10 @@ DisplayLoop(bool& _success_out)
 {
     static state::StateCache* const state_cache = state::StateCache::GetInstance();
 
-    // [ cfarvin::REVISIT ]
-    // timer.StartTimer();
-
-    // [ cfarvin::REVISIT ]
-    // const float current_time = timer.ElapsedMs();
-
+    // Note: Timer is started/stopped at the scope of this loop, while the
+    //       ElapsedMs() function returns a global elapsed time since the
+    //       timer object was initially instantiated.
+    timer.StartTimer();
     const float scaled_time = static_cast<float>(timer.ElapsedMs()) / 225.0f;
 
     //
@@ -65,15 +57,6 @@ DisplayLoop(bool& _success_out)
         glfn::CullFace(GL_BACK);
         glfn::Enable(GL_DEPTH_TEST);
         glfn::DepthFunc(GL_LEQUAL);
-
-        // [ cfarvin::TODO ] Uniform Buffer Object for projection
-        // Projection Matrix
-        glfn::UseProgram(state_cache->opengl_state->program_id); // [ cfarvin::TESTING::REMOVE ]
-        p_location = glfn::GetUniformLocation(state_cache->opengl_state->program_id, "proj_matrix");
-        glfn::UniformMatrix4fv(p_location,
-                               1,
-                               false,
-                               glm::value_ptr(state_cache->window_state.p_mat));
     }
 
     //
@@ -105,7 +88,7 @@ DisplayLoop(bool& _success_out)
                                          glm::vec3(4.25f, 4.25f, 4.25f)); // Scale matrix
 
         // Copy matrices to corresponding uniform values (no view yet).
-        // test_model.ModifyModelMatrix(matrix_stack.top());
+        // test_model.ModifyModelMatrix(matrix_stack.top()); // [ cfarvin::TODO ]
         glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
                                1,
                                false,
@@ -126,17 +109,16 @@ DisplayLoop(bool& _success_out)
 
     _success_out = true;
 
-    // [ cfarvin::REVISIT ]
-    // timer.StopTimer();
-    // timer.TimerElapsedMs(display_loop_miliseconds);
-    // static unsigned int report_fps = 0;
-    // if (5000 == report_fps)
-    // {
-    //     const float FPS = 1.0f / (display_loop_miliseconds / 1000.0f);
-    //     Log_i("[ fps ] " + std::to_string(FPS));
-    //     report_fps = 0;
-    // }
-    // report_fps++;
+    timer.StopTimer();
+    timer.TimerElapsedMs(display_loop_miliseconds);
+    static unsigned int report_fps = 0;
+    if (5000 == report_fps)
+    {
+        const float FPS = (1.0f / display_loop_miliseconds) * 1000.0f;
+        Log_i("[ fps ] " + std::to_string(FPS));
+        report_fps = 0;
+    }
+    report_fps++;
 
     return;
 }
@@ -267,6 +249,17 @@ SetupModels(bool& _success_out)
                 return;
             }
         }
+
+        // Add matrices.
+        {
+            const state::StateCache* const state_cache = state::StateCache::GetInstance();
+
+            // Model matrix.
+            // [ cfarvin::TEMPORARY ] There is currently only one rendering program in use.
+            test_model.AddMatrix(_success_out,
+                                 std::move(state_cache->opengl_state->program_id),
+                                 MatrixType::mtMODEL_MATRIX, ));
+        }
     }
 
     return;
@@ -302,7 +295,7 @@ Initialize(bool& _success_out)
 #endif
     }
 
-    // Create the shader program.
+    // Create the shader program and set the initial projection matrix value.
     {
         // [ cfarvin::TODO ] Move these and other options into "state file", load on startup.
         glt::CreateShaderProgram(_success_out,
@@ -315,6 +308,27 @@ Initialize(bool& _success_out)
             _success_out = false;
             return;
         }
+
+        // Ensure that the aspect ratio is set (non-zero).
+        if ((0 == state_cache->window_state.window_height) ||
+            (0 == state_cache->window_state.window_width) ||
+            (0 == state_cache->window_state.aspect_ratio))
+        {
+            Log_e("Unable to set projection matrix for this rendering program. Invalid window "
+                  "state.");
+            _success_out = false;
+            return;
+        }
+
+        // Set the initial value on the projection matrix.
+        glfn::UseProgram(state_cache->opengl_state->program_id);
+        projection_matrix_shader_layout_location = glfn::GetUniformLocation(
+          state_cache->opengl_state->program_id,
+          "proj_matrix");
+        glfn::UniformMatrix4fv(projection_matrix_shader_layout_location,
+                               1,
+                               false,
+                               glm::value_ptr(state_cache->window_state.p_mat));
     }
 
     // Set initial camera & model positions.

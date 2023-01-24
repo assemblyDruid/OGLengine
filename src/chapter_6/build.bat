@@ -122,7 +122,6 @@ pushd msvc_landfill >nul
 :: General Link Parameters
 ::----------------
 @SET GeneralLinkParameters=/SUBSYSTEM:CONSOLE ^
-/LIBPATH:%SCRIPT_DIR%\..\..\lib ^
 /NXCOMPAT ^
 /MACHINE:x64 ^
 OpenGL32.lib ^
@@ -130,12 +129,6 @@ user32.lib ^
 gdi32.lib ^
 shell32.lib ^
 odbccp32.lib
-
-:: [ cfarvin::REMOVE ] Delete glfw3dll.lib from debug link params.
-::                     At that point you can also delete the reference to the "lib"
-::                     folder when searching for libraries, since that's the only one.
-::
-:: glfw3dll.lib
 
 ::
 :: Debug Link Parameters
@@ -146,9 +139,6 @@ odbccp32.lib
 :: Release Link Parameters
 ::------------------------
 @SET ReleaseLinkParameters=pch.obj
-
-:: [ cfarvin::REMOVE ] glew.c from source files
-:: %SCRIPT_DIR%\..\..\include\GL\glew.c ^
 
 ::
 :: Source Files
