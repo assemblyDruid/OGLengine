@@ -18,7 +18,7 @@
 // [ cfarvin::TODO ] Should these be moved to object classes?
 //                   Possibly consumed by model importer along with which
 //                   shaders to use?
-GLuint projection_matrix_shader_layout_location;
+GLuint projection_matrix_uniform_location;
 
 std::stack<glm::mat4> matrix_stack = {};
 Camera                camera;
@@ -40,7 +40,7 @@ DisplayLoop(bool& _success_out)
     // Note: Timer is started/stopped at the scope of this loop, while the
     //       ElapsedMs() function returns a global elapsed time since the
     //       timer object was initially instantiated.
-    timer.StartTimer();
+    // timer.StartTimer();
     const float scaled_time = static_cast<float>(timer.ElapsedMs()) / 225.0f;
 
     //
@@ -109,16 +109,16 @@ DisplayLoop(bool& _success_out)
 
     _success_out = true;
 
-    timer.StopTimer();
-    timer.TimerElapsedMs(display_loop_miliseconds);
-    static unsigned int report_fps = 0;
-    if (5000 == report_fps)
-    {
-        const float FPS = (1.0f / display_loop_miliseconds) * 1000.0f;
-        Log_i("[ fps ] " + std::to_string(FPS));
-        report_fps = 0;
-    }
-    report_fps++;
+    // timer.StopTimer();
+    // timer.TimerElapsedMs(display_loop_miliseconds);
+    // static unsigned int report_fps = 0;
+    // if (5000 == report_fps)
+    // {
+    //     const float FPS = (1.0f / display_loop_miliseconds) * 1000.0f;
+    //     Log_i("[ fps ] " + std::to_string(FPS));
+    //     report_fps = 0;
+    // }
+    // report_fps++;
 
     return;
 }
@@ -168,6 +168,7 @@ SetupModels(bool& _success_out)
         return;
     }
 
+    // [ cfarvin::TODO ] Should this "Test Model" scope resolution operator be moved up a few lines?
     // Test Model
     {
         const GLenum draw_type                     = GL_TRIANGLES;
@@ -254,11 +255,15 @@ SetupModels(bool& _success_out)
         {
             const state::StateCache* const state_cache = state::StateCache::GetInstance();
 
-            // Model matrix.
             // [ cfarvin::TEMPORARY ] There is currently only one rendering program in use.
-            test_model.AddMatrix(_success_out,
-                                 std::move(state_cache->opengl_state->program_id),
-                                 MatrixType::mtMODEL_MATRIX, ));
+            test_model.AddUniformMatrix(_success_out,
+                                        std::move(state_cache->opengl_state->program_id),
+                                        MatrixType::mtMODEL_VIEW_MATRIX,
+                                        "mv_matrix");
+
+            test_model.ModifyUniformMatrix(std::move(state_cache->opengl_state->program_id),
+                                           MatrixType::mtMODEL_VIEW_MATRIX,
+                                           glm::mat4(1.0f));
         }
     }
 
@@ -322,10 +327,10 @@ Initialize(bool& _success_out)
 
         // Set the initial value on the projection matrix.
         glfn::UseProgram(state_cache->opengl_state->program_id);
-        projection_matrix_shader_layout_location = glfn::GetUniformLocation(
+        projection_matrix_uniform_location = glfn::GetUniformLocation(
           state_cache->opengl_state->program_id,
           "proj_matrix");
-        glfn::UniformMatrix4fv(projection_matrix_shader_layout_location,
+        glfn::UniformMatrix4fv(projection_matrix_uniform_location,
                                1,
                                false,
                                glm::value_ptr(state_cache->window_state.p_mat));

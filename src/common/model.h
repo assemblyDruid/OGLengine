@@ -28,15 +28,25 @@ enum class MatrixType
 {
     mtMODEL_MATRIX = 0,
     mtVIEW_MATRIX,
+
+    // [ cfarvin::REVISIT ] Does the projection matrix ever actually belong in the
+    //                      model? Or, is it always guaranteed to be global and
+    //                      generally model independent?
     mtPROJECTION_MATRIX,
+
+    // [ cfarvin::REVISIT ] Likely no need for each of the following:
+    //                      mtMODEL_MATRIX, mtVIEW_MATRIX, and mtMODEL_VIEW_MATRIX.
+    //                      The last of these was added as a temporary fix.
+    mtMODEL_VIEW_MATRIX,
+
     mtCOUNT
 };
 constexpr size_t matrix_type_count = static_cast<size_t>(MatrixType::mtCOUNT);
 
-struct ProgramMatrixInfo
+struct RenderingProgramUniformMatrixInfo
 {
-    GLuint rendering_program_id                       = 0;
-    GLuint shader_layout_locations[matrix_type_count] = {};
+    GLuint rendering_program_id                 = 0;
+    GLuint uniform_locations[matrix_type_count] = {};
 
     // Note: This member tracks the initialized state for each of the available MatrixType
     //       enum definitions. Default state is 0, indicating that no matrix types have
@@ -51,10 +61,10 @@ struct BufferedModel : Model
     AddVertexArrayObject(bool& _success_out, GLuint& _vao_id_out);
 
     void
-    AddMatrix(bool&              _success_out,
-              const GLuint&&      _rendering_program_id_in,
-              const MatrixType&& _matrix_type_in,
-              const char* const  _matrix_uniform_name_in);
+    AddUniformMatrix(bool&              _success_out,
+                     const GLuint&&     _rendering_program_id_in,
+                     const MatrixType&& _matrix_type_in,
+                     const char* const  _matrix_uniform_name_in);
 
     GLuint
     AddArrayBuffer(
@@ -83,22 +93,22 @@ struct BufferedModel : Model
     // Note: Marked `const` and does not modify anything in the BufferedModel class.
     //       Though, it may modify values in the state cache.
     void
-    ModifyMatrix(const GLuint&&     _rendering_program_id_in,
-                 const MatrixType&& _matrix_type_in,
-                 const glm::mat4&   _matrix_modifier_in) const noexcept;
+    ModifyUniformMatrix(const GLuint&&     _rendering_program_id_in,
+                        const MatrixType&& _matrix_type_in,
+                        const glm::mat4&   _matrix_modifier_in) const noexcept;
 
     void
     Draw() const noexcept;
 
   protected:
-    ProgramMatrixInfo*
-    GetProgramMatrixInfoByRenderingProgramID(
+    RenderingProgramUniformMatrixInfo*
+    GetRenderingProgramUniformMatrixInfoByRenderingProgramID(
       const GLuint&& _rendering_program_id_in) const noexcept;
 
     GLuint*            vertex_array_object = nullptr;
     glt::GLBufferStore buffer_store;
 
-    std::vector<ProgramMatrixInfo> program_matrix_infos;
+    std::vector<RenderingProgramUniformMatrixInfo> program_matrix_infos;
 
     ~BufferedModel();
 };

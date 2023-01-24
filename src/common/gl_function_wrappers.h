@@ -246,9 +246,8 @@ s_QueryErrors(const char* const&& _file_in = nullptr, const unsigned int&& _line
         }
     };
 
-    static const GLenum (*local_glGetError)() = (const GLenum (*)())GetProcAddress(
-      ogl_dll,
-      "glGetError");
+    static const GLenum (*local_glGetError)() = (const GLenum (*)())GetProcAddress(ogl_dll,
+                                                                                   "glGetError");
     assert(nullptr != local_glGetError);
 
     bool                    errors_found    = false;
@@ -450,8 +449,8 @@ namespace glfn
     inline void
     Impl_Clear(const GLbitfield&& _bit_mask_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glClear)(GLbitfield) = (const void (*)(
-          GLbitfield))GetProcAddress(ogl_dll, "glClear");
+        static const void (*local_glClear)(
+          GLbitfield) = (const void (*)(GLbitfield))GetProcAddress(ogl_dll, "glClear");
         assert(nullptr != local_glClear);
 
         local_glClear(_bit_mask_in);
@@ -466,9 +465,8 @@ namespace glfn
     {
         static bool state_initialized = false;
         static const void (*local_glClearColor)(GLfloat, GLfloat, GLfloat, GLfloat) =
-          (const void (*)(GLfloat, GLfloat, GLfloat, GLfloat))GetProcAddress(
-            ogl_dll,
-            "glClearColor");
+          (const void (*)(GLfloat, GLfloat, GLfloat, GLfloat))GetProcAddress(ogl_dll,
+                                                                             "glClearColor");
 
         assert(nullptr != local_glClearColor);
 
@@ -529,9 +527,9 @@ namespace glfn
     inline void
     Impl_CullFace(const GLenum&& _facet_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                 = false;
-        static const void (*local_glCullFace)(GLenum) = (const void (*)(
-          GLenum))GetProcAddress(ogl_dll, "glCullFace");
+        static bool state_initialized = false;
+        static const void (*local_glCullFace)(
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_dll, "glCullFace");
 
         assert(nullptr != local_glCullFace);
 
@@ -586,9 +584,9 @@ namespace glfn
     inline void
     Impl_DepthFunc(const GLenum&& _depth_comparison_mode_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                  = false;
-        static const void (*local_glDepthFunc)(GLenum) = (const void (*)(
-          GLenum))GetProcAddress(ogl_dll, "glDepthFunc");
+        static bool state_initialized = false;
+        static const void (*local_glDepthFunc)(
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_dll, "glDepthFunc");
 
         assert(nullptr != local_glDepthFunc);
 
@@ -615,9 +613,8 @@ namespace glfn
                       const void*&& _data_byte_offset_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
         static const void (*local_glDrawElements)(GLenum, GLsizei, GLenum, const void*) =
-          (const void (*)(GLenum, GLsizei, GLenum, const void*))GetProcAddress(
-            ogl_dll,
-            "glDrawElements");
+          (const void (*)(GLenum, GLsizei, GLenum, const void*))GetProcAddress(ogl_dll,
+                                                                               "glDrawElements");
 
         assert(nullptr != local_glDrawElements);
 
@@ -684,9 +681,9 @@ namespace glfn
     inline void
     Impl_FrontFace(const GLenum&& _winding_order_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                  = false;
-        static const void (*lobal_glFrontFace)(GLenum) = (const void (*)(
-          GLenum))GetProcAddress(ogl_dll, "glFrontFace");
+        static bool state_initialized = false;
+        static const void (*lobal_glFrontFace)(
+          GLenum) = (const void (*)(GLenum))GetProcAddress(ogl_dll, "glFrontFace");
 
         assert(nullptr != lobal_glFrontFace);
 
@@ -735,9 +732,9 @@ namespace glfn
     Impl_GenTextures(const GLsizei&&         _texture_count_in,
                      GLuint*&& _textures_out _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glGenTextures)(GLsizei, GLuint*) = (const void (*)(
+        static const void (*local_glGenTextures)(
           GLsizei,
-          GLuint*))GetProcAddress(ogl_dll, "glGenTextures");
+          GLuint*) = (const void (*)(GLsizei, GLuint*))GetProcAddress(ogl_dll, "glGenTextures");
 
         assert(nullptr != local_glGenTextures);
 
@@ -763,9 +760,9 @@ namespace glfn
     Impl_GetFloatv(const GLenum&&     _parameter_name_in,
                    GLfloat* _data_out _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glGetFloatv)(GLenum, GLfloat*) = (const void (*)(
+        static const void (*local_glGetFloatv)(
           GLenum,
-          GLfloat*))GetProcAddress(ogl_dll, "glGetFloatv");
+          GLfloat*) = (const void (*)(GLenum, GLfloat*))GetProcAddress(ogl_dll, "glGetFloatv");
 
         assert(nullptr != local_glGetFloatv);
 
@@ -841,8 +838,7 @@ namespace glfn
     Impl_GetString(const GLenum&& _name_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
         static const GLubyte* (*local_glGetString)(
-          GLenum) = (const GLubyte* (*)(GLenum))GetProcAddress(ogl_dll,
-                                                               "glGetString");
+          GLenum) = (const GLubyte* (*)(GLenum))GetProcAddress(ogl_dll, "glGetString");
 
         assert(nullptr != local_glGetString);
 
@@ -857,8 +853,7 @@ namespace glfn
     {
         static const GLubyte* (*local_glGetStringi)(
           GLenum,
-          GLuint) = (const GLubyte* (*)(GLenum, GLuint))GetProcAddress(ogl_dll,
-                                                                       "glGetStringi");
+          GLuint) = (const GLubyte* (*)(GLenum, GLuint))GetProcAddress(ogl_dll, "glGetStringi");
 
         assert(nullptr != local_glGetStringi);
 
@@ -924,8 +919,9 @@ namespace glfn
     Impl_PixelStorei(const GLenum&&                   _paramter_name_in,
                      const GLint&& _paramter_value_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glPixelStorei)(GLenum, GLint) = (const void (*)(GLenum, GLint))
-          GetProcAddress(ogl_dll, "glPixelStorei");
+        static const void (*local_glPixelStorei)(
+          GLenum,
+          GLint) = (const void (*)(GLenum, GLint))GetProcAddress(ogl_dll, "glPixelStorei");
 
         assert(nullptr != local_glPixelStorei);
 
@@ -980,8 +976,7 @@ namespace glfn
                                          GLint,
                                          GLenum,
                                          GLenum,
-                                         const void*))GetProcAddress(ogl_dll,
-                                                                     "glTexImage2D");
+                                         const void*))GetProcAddress(ogl_dll, "glTexImage2D");
 
         assert(nullptr != local_glTexImage2D);
 
@@ -1002,9 +997,8 @@ namespace glfn
                       const GLenum&&              _parameter_name_in,
                       const GLint&& _parameter_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (
-          *local_glTexParameteri)(GLenum, GLenum, GLuint) = (const void (*)(GLenum, GLenum, GLuint))
-          GetProcAddress(ogl_dll, "glTexParameteri");
+        static const void (*local_glTexParameteri)(GLenum, GLenum, GLuint) =
+          (const void (*)(GLenum, GLenum, GLuint))GetProcAddress(ogl_dll, "glTexParameteri");
 
         assert(nullptr != local_glTexParameteri);
 
@@ -1017,10 +1011,8 @@ namespace glfn
                       const GLenum&&                _parameter_name_in,
                       const GLfloat&& _parameter_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static const void (*local_glTexParameterf)(GLenum, GLenum, GLfloat) = (const void (*)(
-          GLenum,
-          GLenum,
-          GLfloat))GetProcAddress(ogl_dll, "glTexParameterf");
+        static const void (*local_glTexParameterf)(GLenum, GLenum, GLfloat) =
+          (const void (*)(GLenum, GLenum, GLfloat))GetProcAddress(ogl_dll, "glTexParameterf");
 
         assert(nullptr != local_glTexParameterf);
 
@@ -1114,12 +1106,9 @@ namespace glfn
                   const GLsizei&&            _width_in,
                   const GLsizei&& _height_in _DEBUG_FILE_AND_LINE_PARAMS_)
     {
-        static bool state_initialized                                         = false;
-        static const void (*local_glViewport)(GLint, GLint, GLsizei, GLsizei) = (const void (*)(
-          GLint,
-          GLint,
-          GLsizei,
-          GLsizei))GetProcAddress(ogl_dll, "glViewport");
+        static bool state_initialized = false;
+        static const void (*local_glViewport)(GLint, GLint, GLsizei, GLsizei) =
+          (const void (*)(GLint, GLint, GLsizei, GLsizei))GetProcAddress(ogl_dll, "glViewport");
 
         assert(nullptr != local_glViewport);
 

@@ -34,11 +34,11 @@ BufferedModel::AddVertexArrayObject(bool& _success_out, GLuint& _vao_id_out)
     _success_out        = true;
 }
 
-ProgramMatrixInfo*
-BufferedModel::GetProgramMatrixInfoByRenderingProgramID(
+RenderingProgramUniformMatrixInfo*
+BufferedModel::GetRenderingProgramUniformMatrixInfoByRenderingProgramID(
   const GLuint&& _rendering_program_id_in) const noexcept
 {
-    ProgramMatrixInfo* target_program_matrix_info = nullptr;
+    RenderingProgramUniformMatrixInfo* target_program_matrix_info = nullptr;
     for (auto pm_info : program_matrix_infos)
     {
         if (_rendering_program_id_in == pm_info.rendering_program_id)
@@ -52,10 +52,10 @@ BufferedModel::GetProgramMatrixInfoByRenderingProgramID(
 }
 
 void
-BufferedModel::AddMatrix(bool&              _success_out,
-                         const GLuint&&      _rendering_program_id_in,
-                         const MatrixType&& _matrix_type_in,
-                         const char* const  _matrix_uniform_name_in)
+BufferedModel::AddUniformMatrix(bool&              _success_out,
+                                const GLuint&&     _rendering_program_id_in,
+                                const MatrixType&& _matrix_type_in,
+                                const char* const  _matrix_uniform_name_in)
 {
     if (false == glfn::IsProgram(_rendering_program_id_in))
     {
@@ -65,9 +65,9 @@ BufferedModel::AddMatrix(bool&              _success_out,
     }
 
     glfn::UseProgram(_rendering_program_id_in);
-    GLint layout_location = glfn::GetUniformLocation(_rendering_program_id_in,
-                                                     _matrix_uniform_name_in);
-    if (-1 == layout_location)
+    GLint uniform_location = glfn::GetUniformLocation(_rendering_program_id_in,
+                                                      _matrix_uniform_name_in);
+    if (-1 == uniform_location)
     {
         _success_out = false;
         std::stringstream ss;
@@ -78,44 +78,44 @@ BufferedModel::AddMatrix(bool&              _success_out,
         return;
     }
 
-    // Obtain the ProgramMatrixInfo structure from the array by rendering program id.
-    ProgramMatrixInfo* target_program_matrix_info = GetProgramMatrixInfoByRenderingProgramID(
-      std::move(_rendering_program_id_in));
+    // Obtain the RenderingProgramUniformMatrixInfo structure from the array by rendering program id.
+    RenderingProgramUniformMatrixInfo* target_program_matrix_info =
+      GetRenderingProgramUniformMatrixInfoByRenderingProgramID(std::move(_rendering_program_id_in));
 
     const size_t matrix_type_index = static_cast<size_t>(_matrix_type_in);
 
-    // If a ProgramMatrixInfo with the provided rendering program ID was not found, add a new one.
+    // If a RenderingProgramUniformMatrixInfo with the provided rendering program ID was not found, add a new one.
     if (nullptr == target_program_matrix_info)
     {
         // Note: Cannot .emplace() into vector since we cannot dynamically initialize the matrix_infos
         //       array with the correct index as determined by the value of _matrix_type_in at runtime.
         //       Thus, we must initialize one on the stack and .push_back() instead.
-        ProgramMatrixInfo temp_program_matrix_info    = {};
-        temp_program_matrix_info.rendering_program_id = _rendering_program_id_in;
-        temp_program_matrix_info.shader_layout_locations[matrix_type_index] = layout_location;
+        RenderingProgramUniformMatrixInfo temp_program_matrix_info    = {};
+        temp_program_matrix_info.rendering_program_id                 = _rendering_program_id_in;
+        temp_program_matrix_info.uniform_locations[matrix_type_index] = uniform_location;
 
-        // Set the bit for this matrix type to 1 in the ProgramMatrixInfo structure corresponding with the
+        // Set the bit for this matrix type to 1 in the RenderingProgramUniformMatrixInfo structure corresponding with the
         // provided rendering program ID to show that it has been initialized.
         temp_program_matrix_info.initialized_matrix_types[matrix_type_index] = true;
 
         // Add the new program matrix info to the private vector which tracks them.
         program_matrix_infos.push_back(temp_program_matrix_info);
     }
-    // If a ProgramMatrixInfo with the provided rendering program ID was found, and a matrix of the
+    // If a RenderingProgramUniformMatrixInfo with the provided rendering program ID was found, and a matrix of the
     // provided type was already provided, print a warning. This may need to be removed later if it
-    // is determined that there is good reason for modifying matrices (perhaps a ModifyMatrix function
+    // is determined that there is good reason for modifying matrices (perhaps a ModifyUniformMatrix function
     // would be useful in that case.).
     else if (true == target_program_matrix_info->initialized_matrix_types[matrix_type_index])
     {
         Log_w("Attempted to \"add\" a matrix that already exists. Was this on purpose? Do we need "
-              "a \"ModifyMatrix\" function as well?");
+              "a \"ModifyUniformMatrix\" function as well?");
     }
-    // A ProgramMatrixInfo with the provided rendering program ID was found, though this is the first
+    // A RenderingProgramUniformMatrixInfo with the provided rendering program ID was found, though this is the first
     // matrix of the provided type. Add that matrix info and set the corresponding initialized bit.
     else
     {
         assert(_rendering_program_id_in == target_program_matrix_info->rendering_program_id);
-        target_program_matrix_info->shader_layout_locations[matrix_type_index] = layout_location;
+        target_program_matrix_info->uniform_locations[matrix_type_index] = uniform_location;
 
         assert(false == target_program_matrix_info->initialized_matrix_types[matrix_type_index]);
         target_program_matrix_info->initialized_matrix_types[matrix_type_index] = true;
@@ -250,21 +250,21 @@ BufferedModel::EnableVertexAttribute(bool& _success_out, const GLuint&& _attribu
 }
 
 void
-BufferedModel::ModifyMatrix(const GLuint&&     _rendering_program_id_in,
-                            const MatrixType&& _matrix_type_in,
-                            const glm::mat4&   _matrix_modifier_in) const noexcept
+BufferedModel::ModifyUniformMatrix(const GLuint&&     _rendering_program_id_in,
+                                   const MatrixType&& _matrix_type_in,
+                                   const glm::mat4&   _matrix_modifier_in) const noexcept
 {
     // Note: Due to the expected high call volume of this function in the main render and
     //       draw loop we are making an assumption that the size of this array, which
     //       represents the number of shader rendering programs associated with this
     //       _individual_ model, is very small and effectively instant to iterate over in
-    //       order to find the ProgramMatrixInfo by the rendering program ID.
+    //       order to find the RenderingProgramUniformMatrixInfo by the rendering program ID.
     assert(3 >= program_matrix_infos.size());
 
-    // Note: Iterates over all elements of the vector storing ProgramMatrixInfo(s) to find one
+    // Note: Iterates over all elements of the vector storing RenderingProgramUniformMatrixInfo(s) to find one
     //       that matches the provided rendering program ID.
-    ProgramMatrixInfo* target_program_matrix_info = GetProgramMatrixInfoByRenderingProgramID(
-      std::move(_rendering_program_id_in));
+    RenderingProgramUniformMatrixInfo* target_program_matrix_info =
+      GetRenderingProgramUniformMatrixInfoByRenderingProgramID(std::move(_rendering_program_id_in));
 
     // Note: We assert here rather than throwing an error and setting a _success_out condition
     //       because the expected call volume of this function is very high and within the main
@@ -274,7 +274,7 @@ BufferedModel::ModifyMatrix(const GLuint&&     _rendering_program_id_in,
     glfn::UseProgram(_rendering_program_id_in);
     const size_t matrix_layout_location_index = static_cast<size_t>(_matrix_type_in);
     const GLuint matrix_layout_location       = target_program_matrix_info
-                                            ->shader_layout_locations[matrix_layout_location_index];
+                                            ->uniform_locations[matrix_layout_location_index];
     glfn::UniformMatrix4fv(matrix_layout_location, 1, false, glm::value_ptr(_matrix_modifier_in));
 
     // [ cfarvin::TODO ]
@@ -429,9 +429,9 @@ TexturedModel::Draw() const noexcept
         //       its relatively constant nature. In the future, if there is more than one rendering program,
         //       a new system will need to be implemented. See the notes on this in app_window.cpp, particularly
         //       those in app_window.cpp::OnWindowResize();
-        ModifyMatrix(std::move(current_program_id),
-                     std::move(MatrixType::mtPROJECTION_MATRIX),
-                     std::move(state_cache->window_state.p_mat));
+        ModifyUniformMatrix(std::move(current_program_id),
+                            std::move(MatrixType::mtPROJECTION_MATRIX),
+                            std::move(state_cache->window_state.p_mat));
     }
 
     if (nullptr != currently_enabled_texture)
