@@ -34,21 +34,27 @@ BufferedModel::AddVertexArrayObject(bool& _success_out, GLuint& _vao_id_out)
     _success_out        = true;
 }
 
-RenderingProgramUniformMatrixInfo*
+void
 BufferedModel::GetRenderingProgramUniformMatrixInfoByRenderingProgramID(
-  const GLuint&& _rendering_program_id_in) const noexcept
+  const GLuint&&                      _rendering_program_id_in,
+  RenderingProgramUniformMatrixInfo*& _rendering_program_uniform_matrix_info_out) const noexcept
 {
-    RenderingProgramUniformMatrixInfo* target_program_matrix_info = nullptr;
-    for (auto pm_info : program_matrix_infos)
+    if (nullptr != _rendering_program_uniform_matrix_info_out)
+    {
+        Log_w("The provided RenderingProgramUniformMatrixInfo object is guaranteed to be"
+              " overwritten.");
+        _rendering_program_uniform_matrix_info_out = nullptr;
+    }
+
+    for (const auto& pm_info : rendering_program_uniform_matrix_infos)
     {
         if (_rendering_program_id_in == pm_info.rendering_program_id)
         {
-            target_program_matrix_info = &pm_info;
+            _rendering_program_uniform_matrix_info_out =
+              const_cast<RenderingProgramUniformMatrixInfo*>(&pm_info);
             break;
         }
     }
-
-    return target_program_matrix_info;
 }
 
 void
@@ -79,8 +85,9 @@ BufferedModel::AddUniformMatrix(bool&              _success_out,
     }
 
     // Obtain the RenderingProgramUniformMatrixInfo structure from the array by rendering program id.
-    RenderingProgramUniformMatrixInfo* target_program_matrix_info =
-      GetRenderingProgramUniformMatrixInfoByRenderingProgramID(std::move(_rendering_program_id_in));
+    RenderingProgramUniformMatrixInfo* target_program_matrix_info = nullptr;
+    GetRenderingProgramUniformMatrixInfoByRenderingProgramID(std::move(_rendering_program_id_in),
+                                                             target_program_matrix_info);
 
     const size_t matrix_type_index = static_cast<size_t>(_matrix_type_in);
 
@@ -94,12 +101,15 @@ BufferedModel::AddUniformMatrix(bool&              _success_out,
         temp_program_matrix_info.rendering_program_id                 = _rendering_program_id_in;
         temp_program_matrix_info.uniform_locations[matrix_type_index] = uniform_location;
 
+        // [ cfarvin::TESTING::REVISIT ]
+        temp_program_matrix_info.uniform_names[matrix_type_index] = _matrix_uniform_name_in;
+
         // Set the bit for this matrix type to 1 in the RenderingProgramUniformMatrixInfo structure corresponding with the
         // provided rendering program ID to show that it has been initialized.
         temp_program_matrix_info.initialized_matrix_types[matrix_type_index] = true;
 
         // Add the new program matrix info to the private vector which tracks them.
-        program_matrix_infos.push_back(temp_program_matrix_info);
+        rendering_program_uniform_matrix_infos.push_back(temp_program_matrix_info);
     }
     // If a RenderingProgramUniformMatrixInfo with the provided rendering program ID was found, and a matrix of the
     // provided type was already provided, print a warning. This may need to be removed later if it
@@ -116,6 +126,9 @@ BufferedModel::AddUniformMatrix(bool&              _success_out,
     {
         assert(_rendering_program_id_in == target_program_matrix_info->rendering_program_id);
         target_program_matrix_info->uniform_locations[matrix_type_index] = uniform_location;
+
+        // [ cfarvin::TESTING::REVISIT ]
+        assert(0 < target_program_matrix_info->uniform_names[matrix_type_index].size());
 
         assert(false == target_program_matrix_info->initialized_matrix_types[matrix_type_index]);
         target_program_matrix_info->initialized_matrix_types[matrix_type_index] = true;
@@ -259,12 +272,13 @@ BufferedModel::ModifyUniformMatrix(const GLuint&&     _rendering_program_id_in,
     //       represents the number of shader rendering programs associated with this
     //       _individual_ model, is very small and effectively instant to iterate over in
     //       order to find the RenderingProgramUniformMatrixInfo by the rendering program ID.
-    assert(3 >= program_matrix_infos.size());
+    assert(3 >= rendering_program_uniform_matrix_infos.size());
 
     // Note: Iterates over all elements of the vector storing RenderingProgramUniformMatrixInfo(s) to find one
     //       that matches the provided rendering program ID.
-    RenderingProgramUniformMatrixInfo* target_program_matrix_info =
-      GetRenderingProgramUniformMatrixInfoByRenderingProgramID(std::move(_rendering_program_id_in));
+    RenderingProgramUniformMatrixInfo* target_program_matrix_info = nullptr;
+    GetRenderingProgramUniformMatrixInfoByRenderingProgramID(std::move(_rendering_program_id_in),
+                                                             target_program_matrix_info);
 
     // Note: We assert here rather than throwing an error and setting a _success_out condition
     //       because the expected call volume of this function is very high and within the main
@@ -272,10 +286,22 @@ BufferedModel::ModifyUniformMatrix(const GLuint&&     _rendering_program_id_in,
     assert(nullptr != target_program_matrix_info);
 
     glfn::UseProgram(_rendering_program_id_in);
-    const size_t matrix_layout_location_index = static_cast<size_t>(_matrix_type_in);
-    const GLuint matrix_layout_location       = target_program_matrix_info
-                                            ->uniform_locations[matrix_layout_location_index];
-    glfn::UniformMatrix4fv(matrix_layout_location, 1, false, glm::value_ptr(_matrix_modifier_in));
+    const size_t matrix_type_enum_size_t = static_cast<size_t>(_matrix_type_in);
+    const GLuint matrix_uniform_location = target_program_matrix_info
+                                             ->uniform_locations[matrix_type_enum_size_t];
+
+    // [ cfarvin::TESTING ]
+    {
+        // assert(true == glfn::IsProgram(_rendering_program_id_in));
+        // assert(true == glfn::IsProgram(target_program_matrix_info->rendering_program_id));
+        // assert(target_program_matrix_info->uniform_names[matrix_type_enum_size_t] == "mv_matrix");
+        // const GLuint test_location = glfn::GetUniformLocation(_rendering_program_id_in,
+        //                                                       "mv_matrix");
+        // assert(-1 != test_location);
+        // assert(test_location == matrix_uniform_location);
+    }
+
+    glfn::UniformMatrix4fv(matrix_uniform_location, 1, false, glm::value_ptr(_matrix_modifier_in));
 
     // [ cfarvin::TODO ]
     // Should we go through all of these functions an do things like:

@@ -46,13 +46,16 @@ constexpr size_t matrix_type_count = static_cast<size_t>(MatrixType::mtCOUNT);
 struct RenderingProgramUniformMatrixInfo
 {
     GLuint rendering_program_id                 = 0;
-    GLuint uniform_locations[matrix_type_count] = {};
+    GLuint uniform_locations[matrix_type_count] = { 0 };
 
     // Note: This member tracks the initialized state for each of the available MatrixType
     //       enum definitions. Default state is 0, indicating that no matrix types have
     //       been initialized. Bits at offsets defined by the integer values of the
     //       MatrixType enumeration are set to 1 when a matrix of that type is initialized.
     std::bitset<matrix_type_count> initialized_matrix_types = { 0 };
+
+    // [ cfarvin::TESTING::REVISIT ]
+    std::string uniform_names[matrix_type_count] = {};
 };
 
 struct BufferedModel : Model
@@ -101,14 +104,16 @@ struct BufferedModel : Model
     Draw() const noexcept;
 
   protected:
-    RenderingProgramUniformMatrixInfo*
+    void
     GetRenderingProgramUniformMatrixInfoByRenderingProgramID(
-      const GLuint&& _rendering_program_id_in) const noexcept;
+      const GLuint&&                      _rendering_program_id_in,
+      RenderingProgramUniformMatrixInfo*& _rendering_program_uniform_matrix_info_out)
+      const noexcept;
 
     GLuint*            vertex_array_object = nullptr;
     glt::GLBufferStore buffer_store;
 
-    std::vector<RenderingProgramUniformMatrixInfo> program_matrix_infos;
+    std::vector<RenderingProgramUniformMatrixInfo> rendering_program_uniform_matrix_infos;
 
     ~BufferedModel();
 };

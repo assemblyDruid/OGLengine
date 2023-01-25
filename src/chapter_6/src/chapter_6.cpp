@@ -88,11 +88,13 @@ DisplayLoop(bool& _success_out)
                                          glm::vec3(4.25f, 4.25f, 4.25f)); // Scale matrix
 
         // Copy matrices to corresponding uniform values (no view yet).
-        // test_model.ModifyModelMatrix(matrix_stack.top()); // [ cfarvin::TODO ]
-        glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
-                               1,
-                               false,
-                               glm::value_ptr(matrix_stack.top()));
+        test_model.ModifyUniformMatrix(std::move(state_cache->opengl_state->program_id),
+                                       MatrixType::mtMODEL_VIEW_MATRIX,
+                                       matrix_stack.top()); // [ cfarvin::TODO ]
+        // glfn::UniformMatrix4fv(0, // [ cfarvin::TESTING ] Hard coded to 0
+        //                        1,
+        //                        false,
+        //                        glm::value_ptr(matrix_stack.top()));
 
         // Draw
         test_model.Draw();
