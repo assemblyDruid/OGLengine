@@ -3,6 +3,7 @@
 
 // clang-format off
 #include "pch.h"
+#include "platform/windows_platform.h"
 // clang-format on
 
 namespace app_window

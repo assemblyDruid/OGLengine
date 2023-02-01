@@ -8,21 +8,6 @@
 #include "logging.h"
 #include "state_tools.h"
 
-#ifdef _ENGINE_DEBUG_
-#define _DEBUG_FILE_AND_LINE_PARAMS_ , const char *const &&_file_in, const unsigned int &&_line_in
-#define _DEBUG_FILE_AND_LINE_ARGS_   , std::move(__FILE__), std::move(__LINE__)
-#define _DEBUG_FILE_AND_LINE_PARAMS_NO_COMMA_ \
-    const char *const &&_file_in, const unsigned int &&_line_in
-#define _DEBUG_FILE_AND_LINE_ARGS_NO_COMMA_ std::move(__FILE__), std::move(__LINE__)
-#define _DEBUG_QUERY_ERRORS_ARGS            std::move(_file_in), std::move(_line_in)
-#else
-#define _DEBUG_FILE_AND_LINE_PARAMS_          /* NO OP */
-#define _DEBUG_FILE_AND_LINE_ARGS_            /* NO OP */
-#define _DEBUG_FILE_AND_LINE_PARAMS_NO_COMMA_ /* NO OP */
-#define _DEBUG_FILE_AND_LINE_ARGS_NO_COMMA_   /* NO OP */
-#define _DEBUG_QUERY_ERRORS_ARGS              /* NO OP */
-#endif
-
 //
 // General Note:
 //
@@ -306,7 +291,7 @@ namespace glfn
 
         assert(nullptr != local_glActiveTexture);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLenum* active_texture = &(state_cache->opengl_state->active_texture);
@@ -346,7 +331,7 @@ namespace glfn
 
         assert(nullptr != local_glBindBuffer);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         // [ cfarvin::TODO ] Performance check. Does commenting out these checks make
@@ -384,7 +369,7 @@ namespace glfn
 
         assert(nullptr != local_glBindTexture);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         const unsigned char texture_target_array_index = static_cast<unsigned char>(
@@ -414,7 +399,7 @@ namespace glfn
 
         assert(nullptr != local_glBindVertexArray);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLuint* currently_bound_vertex_array = &(
@@ -470,7 +455,7 @@ namespace glfn
 
         assert(nullptr != local_glClearColor);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         glt::GLState::ClearColor_t* clear_color = &(state_cache->opengl_state->ClearColor);
@@ -533,7 +518,7 @@ namespace glfn
 
         assert(nullptr != local_glCullFace);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLenum* cull_face_facet = &(state_cache->opengl_state->cull_face_facet);
@@ -590,7 +575,7 @@ namespace glfn
 
         assert(nullptr != local_glDepthFunc);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLenum* depth_comparison_mode = &(state_cache->opengl_state->depth_comparison_mode);
@@ -634,7 +619,7 @@ namespace glfn
 
         assert(nullptr != local_glEnable);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         std::unordered_set<GLenum>* enabled_server_side_capabilities = &(
@@ -661,7 +646,7 @@ namespace glfn
 
         assert(nullptr != local_glEnableVertexAttribArray);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLuint* currently_enabled_vertex_attribute_array = &(
@@ -687,7 +672,7 @@ namespace glfn
 
         assert(nullptr != lobal_glFrontFace);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLenum* winding_order = &(state_cache->opengl_state->front_face);
@@ -1059,7 +1044,7 @@ namespace glfn
 
         assert(nullptr != local_glUseProgram);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         GLenum* program_id = &(state_cache->opengl_state->program_id);
@@ -1112,7 +1097,7 @@ namespace glfn
 
         assert(nullptr != local_glViewport);
 
-        static state::StateCache* state_cache = state::StateCache::GetInstance();
+        static state::StateCache* state_cache = state::StateCache::GetMutableInstance();
         assert(nullptr != state_cache->opengl_state);
 
         glt::GLState::Viewport_t* viewport = &(state_cache->opengl_state->Viewport);

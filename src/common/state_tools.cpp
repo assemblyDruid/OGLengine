@@ -374,11 +374,17 @@ state::StateCache::~StateCache()
     }
 }
 
-state::StateCache*
+const state::StateCache* const
 state::StateCache::GetInstance() noexcept
 {
     static StateCache INSTANCE;
     return &INSTANCE;
+}
+
+state::StateCache*
+state::StateCache::GetMutableInstance() noexcept
+{
+    return const_cast<StateCache*>(GetInstance());
 }
 
 // Note: This function is implemented with pretty, readable output in mind.
@@ -481,8 +487,17 @@ void
 state::StateCache::Initialize(bool&              _success_out,
                               const std::string& _start_up_file_state_in) noexcept
 {
+    static bool is_initialized = false;
+    if (true == is_initialized)
+    {
+        _success_out = false;
+        Log_e("You cannot initialize the StateCache more than once.");
+        return;
+    }
+
     _success_out = true;
 
+    StateCache* state_cache = GetMutableInstance();
     std::string file_data;
     size_t      file_size;
     LoadFileToStdString(_success_out, _start_up_file_state_in.c_str(), file_size, file_data);
@@ -545,7 +560,7 @@ state::StateCache::Initialize(bool&              _success_out,
                 {
                     HandleGraphicsState(_success_out,
                                         error_string,
-                                        graphics_state,
+                                        state_cache->graphics_state,
                                         file_data_line_words);
                     on_failure_report_parse_error();
                 }
@@ -567,12 +582,15 @@ state::StateCache::Initialize(bool&              _success_out,
                     //       to cause app exit. In that case, GLState obj is freed when
                     //       the local reference to StateCache goes out of scope via
                     //       StateCache::~StateCache()
-                    if (nullptr == opengl_state)
+                    if (nullptr == state_cache->opengl_state)
                     {
-                        opengl_state = new glt::GLState();
+                        state_cache->opengl_state = new glt::GLState();
                     }
 
-                    HandleGLState(_success_out, error_string, opengl_state, file_data_line_words);
+                    HandleGLState(_success_out,
+                                  error_string,
+                                  state_cache->opengl_state,
+                                  file_data_line_words);
                     on_failure_report_parse_error();
                 }
                 else
@@ -591,7 +609,7 @@ state::StateCache::Initialize(bool&              _success_out,
                 {
                     HandleWindowState(_success_out,
                                       error_string,
-                                      window_state,
+                                      state_cache->window_state,
                                       file_data_line_words);
                     on_failure_report_parse_error();
                 }
@@ -625,6 +643,8 @@ state::StateCache::Initialize(bool&              _success_out,
     // ---------------------------
 #ifdef _ENGINE_PLATFORM_WINDOWS_
     // [ cfarvin::TODO ] Delete on bye-bye.
-    win32_state = new platform::win32::State();
+    state_cache->win32_state = new platform::win32::State();
 #endif
+
+    is_initialized = true;
 }

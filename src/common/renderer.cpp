@@ -1,54 +1,14 @@
-// clang-format off
+#include "renderer.h"
+
 #include "pch.h"
-// clang-format on
-
-// [ cfarvin::TODO ] After adding the renderer and engine classes,
-//                   it is likely that many of these can be removed.
-#include "app_window.h"
-#include "camera.h"
-#include "engine.h"
-#include "gl_function_wrappers.h"
-#include "gl_tools.h"
-#include "image_tools.h"
 #include "logging.h"
-#include "model.h"
-#include "state_tools.h"
-#include "timer.h"
-#include "windows_platform.h"
+#include "app_window.h"
 
-#define PI 3.1415926535f
-
-void
-SetupGraphicsAPI(bool& _success_out)
+Renderer::Renderer()
 {
-    const state::StateCache* const state_cache = state::StateCache::GetInstance();
-    // [ cfarvin::TODO ] Move these and other options into "state file", load on startup.
-    glt::CreateShaderProgram(_success_out,
-                             "./../src/chapter_6/src/shaders/vertex_shader.glsl",
-                             "./../src/chapter_6/src/shaders/fragment_shader.glsl",
-                             state_cache->opengl_state->program_id);
-    if ((0 == state_cache->opengl_state->program_id) || (_success_out == false))
-    {
-        Log_e("Unable to create a shader program.");
-        _success_out = false;
-        return;
-    }
+    camera.SetPosition(0.0f, 0.0f, 15.0f);
+    test_model.SetPosition(0.0f, 0.0f, 0.0f);
 
-    // Ensure that the aspect ratio is set (non-zero).
-    if ((0 == state_cache->window_state.window_height) ||
-        (0 == state_cache->window_state.window_width) ||
-        (0 == state_cache->window_state.aspect_ratio))
-    {
-        Log_e("Unable to set projection matrix for this rendering program. Invalid window "
-              "state.");
-        _success_out = false;
-        return;
-    }
-}
-
-void
-SetupModels(bool& _success_out)
-{
     _success_out = false;
 
     GLuint test_model_vao = 0;
@@ -187,65 +147,18 @@ SetupModels(bool& _success_out)
         }
     }
 
+    // Set the initial value on the projection matrix.
+    {
+        glfn::UseProgram(state_cache->opengl_state->program_id);
+        projection_matrix_uniform_location = glfn::GetUniformLocation(
+          state_cache->opengl_state->program_id,
+          "proj_matrix");
+        glfn::UniformMatrix4fv(projection_matrix_uniform_location,
+                               1,
+                               false,
+                               glm::value_ptr(state_cache->window_state.p_mat));
+    }
+
     return;
 }
 
-void
-Chapter6Initialize(bool& _success_out)
-{
-    SetupGraphicsAPI(_success_out);
-    if (false == _success_out)
-    {
-        Log_e("Unable to initialize graphics API.");
-        return;
-    }
-
-    SetupModels(_success_out);
-    if (false == _success_out)
-    {
-        Log_e("Unable to initialize models.");
-        return;
-    }
-}
-
-int
-main()
-{
-    bool    success; // [ cfarvin::REVISIT ] Into state cache?
-    Engine& engine = Engine::GetInstance();
-    engine.Initialize(success, "../src/chapter_6/chapter_6.sus");
-    if (false == success)
-    {
-        Log_e("Unable to initialize the engine.");
-        std::exit(EXIT_FAILURE);
-    }
-
-    engine.AddRenderer(success, Chapter6Initialize);
-
-    while ((true == state_cache->is_running) && (true == success))
-    {
-        app_window::SwapBuffers();
-        app_window::ProcessPlatformEvents();
-
-        if (false == state_cache->is_running || false == success) break;
-        DisplayLoop(success);
-    }
-
-    if (false == success)
-    {
-        Log_e("Error during render loop.");
-    }
-
-    state_cache->DumpState();
-
-    if (true == success)
-    {
-        Log_i("Graceful exit.");
-        std::exit(EXIT_SUCCESS);
-    }
-    else
-    {
-        Log_e("Exited with errors.");
-        std::exit(EXIT_FAILURE);
-    }
-}
